@@ -3,7 +3,7 @@ import ImageIO
 import PDFKit
 import UniformTypeIdentifiers
 
-/// Bilder über ImageIO. Bietet nur Formate an, die ImageIO auf diesem System schreiben kann.
+/// Images via ImageIO. Only offers formats ImageIO can write on this system.
 struct ImageConverter: Converter {
     private static let writable = Set((CGImageDestinationCopyTypeIdentifiers() as? [String]) ?? [])
     private static let candidates: [Format] = [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]
@@ -35,7 +35,7 @@ struct ImageConverter: Converter {
         }
     }
 
-    /// ImageIO zuerst; NSImage als Rückfall, z. B. für SVG.
+    /// ImageIO first; NSImage as a fallback, e.g. for SVG.
     static func loadImage(_ url: URL) throws -> CGImage {
         if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
            let image = CGImageSourceCreateImageAtIndex(source, 0, nil) {

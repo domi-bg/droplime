@@ -1,13 +1,13 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Optional: Audio- und Videoformate, die AVFoundation nicht kann. Braucht `brew install ffmpeg`.
-/// Bietet nur Formate an, deren Encoder im installierten ffmpeg vorhanden ist.
+/// Optional: audio and video formats AVFoundation can't handle. Needs `brew install ffmpeg`.
+/// Only offers formats whose encoder exists in the installed ffmpeg.
 struct FFmpegConverter: Converter {
     let executable: URL
     private let options: [Format: [String]]
 
-    /// Format → (benötigter Encoder, ffmpeg-Argumente zwischen Eingabe und Ausgabe).
+    /// Format → (required encoder, ffmpeg arguments between input and output).
     private static let recipes: [(Format, String?, [String])] = [
         (.mp4, "libx264", ["-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac"]),
         (.mov, "libx264", ["-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac"]),
@@ -48,7 +48,7 @@ struct FFmpegConverter: Converter {
         try await ExternalTool.run(executable, ["-hide_banner", "-nostdin", "-i", input.path] + args + [output.path])
     }
 
-    /// Liest die Encoder-Namen aus `ffmpeg -encoders` (synchron, einmal beim Start).
+    /// Reads encoder names from `ffmpeg -encoders` (synchronously, once at launch).
     private static func availableEncoders(_ executable: URL) -> Set<String> {
         let process = Process()
         process.executableURL = executable
@@ -59,7 +59,7 @@ struct FFmpegConverter: Converter {
         guard (try? process.run()) != nil else { return [] }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        // Zeilen wie " A..... libmp3lame   libmp3lame MP3 …": das zweite Feld ist der Name.
+        // Lines like " A..... libmp3lame   libmp3lame MP3 …": the second field is the name.
         return Set(String(decoding: data, as: UTF8.self).split(separator: "\n").compactMap { line in
             let fields = line.split(separator: " ")
             return fields.count > 1 ? String(fields[1]) : nil

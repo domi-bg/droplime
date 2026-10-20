@@ -1,12 +1,12 @@
 import Foundation
 
-/// Sprache der App. `system` folgt der Systemsprache: Deutsch, wenn sie Deutsch ist, sonst Englisch.
+/// App language. `system` follows the system language: German if it's German, otherwise English.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system, german, english
 
     var id: String { rawValue }
 
-    /// Die tatsächlich verwendete Sprache.
+    /// The language actually used.
     var resolved: AppLanguage {
         self == .system ? Self.resolve(preferred: Locale.preferredLanguages) : self
     }
@@ -15,7 +15,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         preferred.first?.lowercased().hasPrefix("de") == true ? .german : .english
     }
 
-    /// Name der Sprache in der Sprache selbst, wie in macOS üblich.
+    /// Name of the language in that language, as usual on macOS.
     var label: String {
         switch self {
         case .system: return L.languageSystem(Self.resolve(preferred: Locale.preferredLanguages).label)
@@ -25,13 +25,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
-/// Alle sichtbaren Texte der App. Eine neue Zeichenkette muss in jeder Sprache ergänzt werden,
-/// sonst baut die App nicht – so kann keine Übersetzung vergessen werden.
+/// Every visible string in the app. A new string has to be added for every language,
+/// otherwise the app doesn't build, so no translation can be forgotten.
 struct Strings {
-    // Rad
+    // Wheel
     let modeConvert, modeTools, modeActions, nothingPossible: String
+    let wheelKeep, wheelReplace: String
 
-    // Menü und Einstellungen
+    // Menu and settings
     let menuSettings, menuQuit, settingsWindowTitle: String
     let settingsLanguage: String
     let languageSystem: (String) -> String
@@ -41,20 +42,20 @@ struct Strings {
     let settingsTools, toolFound, restartAfterInstall, notAvailableHere: String
     let needsTool: (String) -> String
 
-    // Werkzeuge und Dateinamen
+    // Tools and file names
     let toolResize, toolRotate, toolStripMetadata, toolMerge, toolSplit, toolCompress, toolRemoveAudio, toolZip, toolUnzip: String
     let suffixSmall, suffixRotated, suffixNoMetadata, suffixCompressed, suffixNoAudio: String
     let pageSuffix: (Int) -> String
     let mergedFileName, archiveFileName: String
 
-    // Aktionen
+    // Actions
     let actionAirDrop, actionCopy, actionMove, actionPath, actionTerminal, actionFloat: String
     let copyTo, moveTo, choose: String
     let floatItems: (Int) -> String
     let floatMore: (Int) -> String
     let floatTooltip: String
 
-    // Fehler
+    // Errors
     let conversionFailed, actionFailed: String
     let toolFailed: (String) -> String
     let cannotRead, cannotWrite, cannotOpen, cannotRotate, noText, onlyOnePage: (String) -> String
@@ -65,6 +66,7 @@ struct Strings {
 
     static let german = Strings(
         modeConvert: "Konvertieren", modeTools: "Werkzeuge", modeActions: "Aktionen", nothingPossible: "Nichts möglich",
+        wheelKeep: "Behalten", wheelReplace: "Ersetzen",
         menuSettings: "Einstellungen …", menuQuit: "Droplime beenden", settingsWindowTitle: "Droplime Einstellungen",
         settingsLanguage: "Sprache",
         languageSystem: { "Systemsprache (\($0))" },
@@ -111,6 +113,7 @@ struct Strings {
 
     static let english = Strings(
         modeConvert: "Convert", modeTools: "Tools", modeActions: "Actions", nothingPossible: "Nothing to do",
+        wheelKeep: "Keep", wheelReplace: "Replace",
         menuSettings: "Settings …", menuQuit: "Quit Droplime", settingsWindowTitle: "Droplime Settings",
         settingsLanguage: "Language",
         languageSystem: { "System language (\($0))" },
@@ -156,5 +159,5 @@ struct Strings {
     )
 }
 
-/// Die Texte in der aktuell eingestellten Sprache.
+/// The strings in the currently selected language.
 var L: Strings { Settings.shared.language.resolved == .german ? .german : .english }

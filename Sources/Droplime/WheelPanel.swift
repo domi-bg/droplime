@@ -1,9 +1,9 @@
 import AppKit
 
-/// Schwebendes, randloses Fenster am Mauszeiger, das das Radialmenü zeigt.
+/// Floating borderless window at the cursor that shows the radial menu.
 @MainActor
 final class WheelPanel: NSPanel {
-    /// `outer` ist true, wenn im geteilten Rad der äußere Ring („ersetzen“) gewählt wurde.
+    /// `outer` is true when the outer ("replace") ring of the split wheel was chosen.
     var onPick: ((_ mode: WheelMode, _ item: String, _ urls: [URL], _ outer: Bool) -> Void)? {
         get { wheelView.onPick }
         set { wheelView.onPick = newValue }
@@ -28,13 +28,13 @@ final class WheelPanel: NSPanel {
         hideWork?.cancel()
         let center = isVisible ? NSPoint(x: frame.midX, y: frame.midY) : point
         wheelView.configure(mode: mode, items: items, split: split)
-        // Fenster nur so groß wie das Rad, damit es keine fremden Drop-Ziele verdeckt.
+        // Window only as large as the wheel so it doesn't cover other drop targets.
         let side = wheelView.diameter + 8
         setFrame(NSRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side), display: true)
         orderFrontRegardless()
     }
 
-    /// Kurz verzögert, damit die Bestätigung nach dem Ablegen sichtbar bleibt.
+    /// Slightly delayed so the confirmation after dropping stays visible.
     func hideSoon() {
         guard isVisible else { return }
         let work = DispatchWorkItem { [weak self] in self?.orderOut(nil) }
@@ -43,7 +43,7 @@ final class WheelPanel: NSPanel {
     }
 }
 
-/// Zeichnet die Kreissektoren und nimmt Dateien per Drag & Drop an.
+/// Draws the wheel segments and accepts dropped files.
 final class WheelView: NSView {
     var onPick: ((WheelMode, String, [URL], Bool) -> Void)?
 
@@ -61,7 +61,8 @@ final class WheelView: NSView {
     private let innerRadius: CGFloat = 48
     private var middleRadius: CGFloat { split ? 128 : 150 }
     private var outerRadius: CGFloat { split ? 190 : 150 }
-    var diameter: CGFloat { outerRadius * 2 + 8 }
+    /// Room for the wheel plus the popped-out segment and its shadow.
+    var diameter: CGFloat { (outerRadius + Self.popOffset + 14) * 2 }
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -79,7 +80,7 @@ final class WheelView: NSView {
         needsDisplay = true
     }
 
-    /// Hebt ein Feld hervor, ohne dass gezogen wird – für Vorschaubilder (scripts/make-screenshots).
+    /// Highlights a segment without an actual drag, for preview images (scripts/make-screenshots).
     func highlight(_ index: Int, outer: Bool = false) {
         highlighted = Hit(index: index, outer: outer)
         needsDisplay = true
@@ -88,7 +89,7 @@ final class WheelView: NSView {
     private var center: NSPoint { NSPoint(x: bounds.midX, y: bounds.midY) }
     private var step: CGFloat { 360 / CGFloat(max(items.count, 1)) }
 
-    /// Mittelwinkel von Sektor i in Grad; Sektor 0 oben, dann im Uhrzeigersinn.
+    /// Center angle of segment i in degrees; segment 0 at the top, then clockwise.
     private func angle(of i: Int) -> CGFloat { 90 - CGFloat(i) * step }
 
     private func hit(at point: NSPoint) -> Hit? {
@@ -101,19 +102,57 @@ final class WheelView: NSView {
         return Hit(index: Int((d + step / 2) / step) % items.count, outer: distance > middleRadius)
     }
 
-    // MARK: - Zeichnen
+    // MARK: - Drawing
 
-    private static let lime = NSColor(red: 0.66, green: 0.84, blue: 0.23, alpha: 1)
-    private static let segment = NSColor(white: 0.12, alpha: 0.9)
-    private static let replaceSegment = NSColor(red: 0.24, green: 0.11, blue: 0.11, alpha: 0.92)
+    private static let lime = NSColor(red: 0.69, green: 0.86, blue: 0.27, alpha: 1)
+    private static let amber = NSColor(red: 0.98, green: 0.74, blue: 0.27, alpha: 1)
+    private static let segment = NSColor(white: 0.13, alpha: 0.94)
+    private static let replaceSegment = NSColor(red: 0.2, green: 0.17, blue: 0.12, alpha: 0.94)
+    private static let border = NSColor(white: 1, alpha: 0.08)
 
-    private func sectorPath(_ i: Int, from r1: CGFloat, to r2: CGFloat) -> NSBezierPath {
-        let a = angle(of: i), gap: CGFloat = items.count > 1 ? 1.2 : 0
+    /// Width of the gap between segments and between the two rings.
+    private let gapWidth: CGFloat = 6
+    private let cornerRadius: CGFloat = 9
+    /// How far the highlighted segment pops out, like the popped segment in the app icon.
+    private static let popOffset: CGFloat = 8
+
+    /// Segment between radii r1 and r2 with rounded corners and constant-width gaps.
+    /// Built from a shape inset by the corner radius, then grown back by a round-joined stroke.
+    private func segmentPath(_ i: Int, from r1: CGFloat, to r2: CGFloat) -> NSBezierPath {
+        let inner = r1 + cornerRadius, outer = r2 - cornerRadius
         let path = NSBezierPath()
-        path.appendArc(withCenter: center, radius: r2, startAngle: a + step / 2 - gap, endAngle: a - step / 2 + gap, clockwise: true)
-        path.appendArc(withCenter: center, radius: r1, startAngle: a - step / 2 + gap, endAngle: a + step / 2 - gap, clockwise: false)
-        path.close()
-        return path
+        if items.count == 1 {
+            path.appendOval(in: NSRect(x: center.x - outer, y: center.y - outer, width: outer * 2, height: outer * 2))
+            // Hole drawn in the opposite direction so the non-zero rule leaves it empty.
+            path.append(NSBezierPath(ovalIn: NSRect(x: center.x - inner, y: center.y - inner,
+                                                    width: inner * 2, height: inner * 2)).reversed)
+        } else {
+            let d = gapWidth / 2 + cornerRadius
+            let mid = angle(of: i) * .pi / 180, half = step / 2 * .pi / 180
+            // Point on the edge line offset by d towards the segment's middle, at the given radius.
+            func edge(_ edgeAngle: CGFloat, towardsMiddle sign: CGFloat, radius: CGFloat) -> NSPoint {
+                let t = sqrt(max(radius * radius - d * d, 0))
+                let normal = edgeAngle + sign * .pi / 2
+                return NSPoint(x: center.x + cos(edgeAngle) * t + cos(normal) * d,
+                               y: center.y + sin(edgeAngle) * t + sin(normal) * d)
+            }
+            func degrees(_ p: NSPoint) -> CGFloat { atan2(p.y - center.y, p.x - center.x) * 180 / .pi }
+            let outerRight = edge(mid - half, towardsMiddle: 1, radius: outer)
+            let outerLeft = edge(mid + half, towardsMiddle: -1, radius: outer)
+            let innerLeft = edge(mid + half, towardsMiddle: -1, radius: inner)
+            let innerRight = edge(mid - half, towardsMiddle: 1, radius: inner)
+            path.move(to: innerRight)
+            path.line(to: outerRight)
+            path.appendArc(withCenter: center, radius: outer, startAngle: degrees(outerRight), endAngle: degrees(outerLeft))
+            path.line(to: innerLeft)
+            path.appendArc(withCenter: center, radius: inner, startAngle: degrees(innerLeft), endAngle: degrees(innerRight),
+                           clockwise: true)
+            path.close()
+        }
+        let core = path.cgPath
+        let grown = core.copy(strokingWithWidth: cornerRadius * 2, lineCap: .round, lineJoin: .round, miterLimit: 10)
+        // Non-zero rule: the stroke outline overlaps itself, which even-odd would punch holes into.
+        return NSBezierPath(cgPath: core.union(grown, using: .winding))
     }
 
     private func point(at radius: CGFloat, angle a: CGFloat) -> NSPoint {
@@ -121,47 +160,92 @@ final class WheelView: NSView {
         return NSPoint(x: center.x + cos(rad) * radius, y: center.y + sin(rad) * radius)
     }
 
+    /// Offset for a popped-out segment, along its middle direction.
+    private func popOffset(for i: Int) -> NSPoint {
+        let rad = angle(of: i) * .pi / 180
+        return NSPoint(x: cos(rad) * Self.popOffset, y: sin(rad) * Self.popOffset)
+    }
+
+    private func drawSegment(_ path: NSBezierPath, fill: NSColor, highlighted: Bool) {
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(highlighted ? 0.5 : 0.3)
+        shadow.shadowBlurRadius = highlighted ? 14 : 8
+        shadow.shadowOffset = NSSize(width: 0, height: -3)
+        shadow.set()
+        fill.setFill()
+        path.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        if !highlighted {
+            Self.border.setStroke()
+            path.lineWidth = 1
+            path.stroke()
+        }
+    }
+
     override func draw(_ dirtyRect: NSRect) {
-        for (i, item) in items.enumerated() {
+        let ringGap = split ? gapWidth / 2 : 0
+        // Highlighted segment last, so its shadow lies on top of its neighbours.
+        let order = items.indices.filter { $0 != highlighted?.index } + (highlighted.map { [$0.index] } ?? [])
+        for i in order {
+            let item = items[i]
+            let a = angle(of: i)
+
             let innerHit = highlighted == Hit(index: i, outer: false)
-            (innerHit ? Self.lime : Self.segment).setFill()
-            sectorPath(i, from: innerRadius, to: middleRadius).fill()
-            drawText(item, at: point(at: (innerRadius + middleRadius) / 2, angle: angle(of: i)),
-                     size: 13, color: innerHit ? .black : .white)
+            let innerPath = segmentPath(i, from: innerRadius, to: middleRadius - ringGap)
+            let innerShift = innerHit ? popOffset(for: i) : .zero
+            innerPath.transform(using: AffineTransform(translationByX: innerShift.x, byY: innerShift.y))
+            drawSegment(innerPath, fill: innerHit ? Self.lime : Self.segment, highlighted: innerHit)
+            var labelPoint = point(at: (innerRadius + middleRadius) / 2, angle: a)
+            labelPoint.x += innerShift.x; labelPoint.y += innerShift.y
+            let innerColor: NSColor = innerHit ? .black : .white
+            if split {
+                drawText(item, at: NSPoint(x: labelPoint.x, y: labelPoint.y + 6), size: 13, weight: .semibold, color: innerColor)
+                drawText(L.wheelKeep, at: NSPoint(x: labelPoint.x, y: labelPoint.y - 9), size: 9, weight: .medium,
+                         color: innerColor.withAlphaComponent(0.6))
+            } else {
+                drawText(item, at: labelPoint, size: 13, weight: .semibold, color: innerColor)
+            }
 
             if split {
                 let outerHit = highlighted == Hit(index: i, outer: true)
-                (outerHit ? NSColor.systemRed : Self.replaceSegment).setFill()
-                sectorPath(i, from: middleRadius, to: outerRadius).fill()
-                drawSymbol("trash", at: point(at: (middleRadius + outerRadius) / 2, angle: angle(of: i)))
+                let outerPath = segmentPath(i, from: middleRadius + ringGap, to: outerRadius)
+                let outerShift = outerHit ? popOffset(for: i) : .zero
+                outerPath.transform(using: AffineTransform(translationByX: outerShift.x, byY: outerShift.y))
+                drawSegment(outerPath, fill: outerHit ? Self.amber : Self.replaceSegment, highlighted: outerHit)
+                var p = point(at: (middleRadius + outerRadius) / 2, angle: a)
+                p.x += outerShift.x; p.y += outerShift.y
+                let color: NSColor = outerHit ? .black : Self.amber
+                drawSymbol("arrow.triangle.2.circlepath", at: NSPoint(x: p.x, y: p.y + 7), color: color)
+                drawText(L.wheelReplace, at: NSPoint(x: p.x, y: p.y - 9), size: 9, weight: .semibold, color: color)
             }
         }
 
-        NSColor(white: 0.08, alpha: 0.94).setFill()
-        NSBezierPath(ovalIn: NSRect(x: center.x - innerRadius + 3, y: center.y - innerRadius + 3,
-                                    width: (innerRadius - 3) * 2, height: (innerRadius - 3) * 2)).fill()
-        drawText(centerText, at: center, size: 10, color: .white)
+        let hub = NSBezierPath(ovalIn: NSRect(x: center.x - innerRadius + 4, y: center.y - innerRadius + 4,
+                                              width: (innerRadius - 4) * 2, height: (innerRadius - 4) * 2))
+        drawSegment(hub, fill: NSColor(white: 0.09, alpha: 0.96), highlighted: false)
+        drawText(centerText, at: center, size: 10, weight: .semibold, color: .white)
     }
 
-    private func drawText(_ text: String, at point: NSPoint, size: CGFloat, color: NSColor) {
+    private func drawText(_ text: String, at point: NSPoint, size: CGFloat, weight: NSFont.Weight, color: NSColor) {
         let s = NSAttributedString(string: text, attributes: [
-            .font: NSFont.systemFont(ofSize: size, weight: .semibold),
+            .font: NSFont.systemFont(ofSize: size, weight: weight),
             .foregroundColor: color,
         ])
         let textSize = s.size()
         s.draw(at: NSPoint(x: point.x - textSize.width / 2, y: point.y - textSize.height / 2))
     }
 
-    private func drawSymbol(_ name: String, at point: NSPoint) {
+    private func drawSymbol(_ name: String, at point: NSPoint, color: NSColor) {
         let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-            .applying(.init(paletteColors: [.white.withAlphaComponent(0.85)]))
+            .applying(.init(paletteColors: [color]))
         guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(config) else { return }
         image.draw(in: NSRect(x: point.x - image.size.width / 2, y: point.y - image.size.height / 2,
                               width: image.size.width, height: image.size.height))
     }
 
-    // MARK: - Drop-Ziel
+    // MARK: - Drop target
 
     private func updateHighlight(_ sender: NSDraggingInfo) -> NSDragOperation {
         let current = hit(at: convert(sender.draggingLocation, from: nil))

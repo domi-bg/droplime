@@ -1,7 +1,7 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Optional: Office-Dokumente über LibreOffice im Hintergrund. Braucht LibreOffice in /Applications.
+/// Optional: office documents via headless LibreOffice. Needs LibreOffice in /Applications.
 struct LibreOfficeConverter: Converter {
     let executable: URL
 
@@ -25,7 +25,7 @@ struct LibreOfficeConverter: Converter {
         return []
     }
 
-    /// soffice schreibt immer "<Name>.<ext>" in einen Ordner; daher erst in einen Temp-Ordner, dann verschieben.
+    /// soffice always writes "<name>.<ext>" into a folder, so write to a temp folder first, then move.
     func convert(_ input: URL, to format: Format, output: URL) async throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)

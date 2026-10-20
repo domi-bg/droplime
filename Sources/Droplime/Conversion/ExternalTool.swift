@@ -1,6 +1,6 @@
 import Foundation
 
-/// Sucht und startet Kommandozeilen-Werkzeuge wie ffmpeg, soffice oder pandoc.
+/// Finds and runs command line tools such as ffmpeg, soffice or pandoc.
 enum ExternalTool {
     static let searchPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
 
@@ -10,8 +10,8 @@ enum ExternalTool {
             .first { FileManager.default.isExecutableFile(atPath: $0.path) }
     }
 
-    /// Führt das Werkzeug aus und gibt stdout zurück; wirft bei Exit-Code ≠ 0.
-    /// Die Ausgabe geht in Temp-Dateien, damit volle Pipes den Prozess nicht blockieren.
+    /// Runs the tool and returns stdout; throws on a non-zero exit code.
+    /// Output goes to temp files so full pipes can't block the process.
     @discardableResult
     static func run(_ executable: URL, _ arguments: [String]) async throws -> String {
         let temp = FileManager.default.temporaryDirectory

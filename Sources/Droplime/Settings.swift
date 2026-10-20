@@ -14,7 +14,7 @@ enum AfterConversion: String, CaseIterable, Identifiable {
     }
 }
 
-/// Einstellungen, gespeichert in UserDefaults.
+/// Settings, stored in UserDefaults.
 final class Settings: ObservableObject {
     static let shared = Settings()
 
@@ -28,7 +28,7 @@ final class Settings: ObservableObject {
         didSet { defaults.set(afterConversion.rawValue, forKey: "afterConversion") }
     }
 
-    /// Dateiendungen der Zielformate, die nie im Rad erscheinen sollen.
+    /// File extensions of target formats that should never appear in the wheel.
     @Published private(set) var disabledFormats: Set<String> {
         didSet { defaults.set(Array(disabledFormats).sorted(), forKey: "disabledFormats") }
     }

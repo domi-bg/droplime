@@ -1,11 +1,11 @@
 import AVFoundation
 import UniformTypeIdentifiers
 
-/// Video über AVFoundation, Audio über das in macOS eingebaute `afconvert`.
+/// Video via AVFoundation, audio via the built-in `afconvert`.
 struct MediaConverter: Converter {
-    /// Nur Typen, die AVFoundation wirklich lesen kann (also z. B. kein MKV oder WebM).
+    /// Only types AVFoundation can actually read (so e.g. no MKV or WebM).
     private static let readable = Set(AVURLAsset.audiovisualTypes().map(\.rawValue))
-    /// Format → (Dateiformat, Datenformat) für afconvert.
+    /// Format → (file format, data format) for afconvert.
     private static let afconvertFormats: [Format: (String, String)] = [
         .m4a: ("m4af", "aac"), .wav: ("WAVE", "LEI16"), .aiff: ("AIFF", "BEI16"),
     ]

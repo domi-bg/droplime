@@ -4,7 +4,7 @@ import PDFKit
 import Testing
 @testable import Droplime
 
-/// Erzeugt Beispieldateien und wandelt jede in alle angebotenen Formate um.
+/// Creates sample files and converts each one to every offered format.
 @Suite(.serialized)
 struct ConversionTests {
     let folder: URL
@@ -18,28 +18,28 @@ struct ConversionTests {
             + [DocumentConverter(), MediaConverter()] + [FFmpegConverter()].compactMap { $0 })
     }
 
-    /// Wandelt `input` in jedes angebotene Format um und prüft, dass nicht-leere Dateien entstehen.
+    /// Converts `input` to every offered format and checks that non-empty files come out.
     private func convertToAllTargets(_ input: URL, expecting expected: [Format]) async throws {
         let targets = service.targets(for: [input])
         for format in expected {
-            #expect(targets.contains(format), "\(input.lastPathComponent) sollte \(format.label) anbieten")
+            #expect(targets.contains(format), "\(input.lastPathComponent) should offer \(format.label)")
         }
         for format in targets {
             let errors = await service.convert([input], to: format).errors
             #expect(errors.isEmpty, "\(input.lastPathComponent) → \(format.label): \(errors)")
             let produced = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])
                 .filter { $0.pathExtension == format.ext && $0 != input }
-            #expect(!produced.isEmpty, "\(input.lastPathComponent) → \(format.label): keine Datei")
+            #expect(!produced.isEmpty, "\(input.lastPathComponent) → \(format.label): no file")
             for url in produced {
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                #expect(size > 0, "\(url.lastPathComponent) ist leer")
+                #expect(size > 0, "\(url.lastPathComponent) is empty")
                 try FileManager.default.removeItem(at: url)
             }
         }
     }
 
     private func sampleImage() throws -> URL {
-        let url = folder.appendingPathComponent("bild.png")
+        let url = folder.appendingPathComponent("image.png")
         let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 64, pixelsHigh: 48, bitsPerSample: 8,
                                    samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
                                    colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
@@ -63,8 +63,8 @@ struct ConversionTests {
 
     @Test func replaceTrashesOnlySuccessfulOriginals() async throws {
         let image = try sampleImage()
-        let broken = folder.appendingPathComponent("kaputt.png")
-        try Data("kein Bild".utf8).write(to: broken)
+        let broken = folder.appendingPathComponent("broken.png")
+        try Data("not an image".utf8).write(to: broken)
         var trashed: [URL] = []
 
         let result = await service.convert([image, broken], to: .jpg, replaceOriginals: true, trash: { trashed.append($0) })
@@ -72,7 +72,7 @@ struct ConversionTests {
         #expect(result.succeeded == [image])
         #expect(result.errors.count == 1)
         #expect(trashed == [image])
-        #expect(FileManager.default.fileExists(atPath: folder.appendingPathComponent("bild.jpg").path))
+        #expect(FileManager.default.fileExists(atPath: folder.appendingPathComponent("image.jpg").path))
     }
 
     @Test func image() async throws {
@@ -80,13 +80,13 @@ struct ConversionTests {
     }
 
     @Test func pdfSplitsPages() async throws {
-        let url = folder.appendingPathComponent("dokument.pdf")
+        let url = folder.appendingPathComponent("document.pdf")
         var box = CGRect(x: 0, y: 0, width: 595, height: 842)
         let context = CGContext(url as CFURL, mediaBox: &box, nil)!
         for page in 1...2 {
             context.beginPDFPage(nil)
             NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
-            NSString(string: "Seite \(page)").draw(at: NSPoint(x: 72, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 24)])
+            NSString(string: "Page \(page)").draw(at: NSPoint(x: 72, y: 700), withAttributes: [.font: NSFont.systemFont(ofSize: 24)])
             NSGraphicsContext.current = nil
             context.endPDFPage()
         }
@@ -95,7 +95,7 @@ struct ConversionTests {
         let errors = await service.convert([url], to: .png).errors
         #expect(errors.isEmpty)
         let pages = try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasSuffix(".png") }
-        #expect(pages.sorted() == ["dokument\(L.pageSuffix(1)).png", "dokument\(L.pageSuffix(2)).png"])
+        #expect(pages.sorted() == ["document\(L.pageSuffix(1)).png", "document\(L.pageSuffix(2)).png"])
         pages.forEach { try? FileManager.default.removeItem(at: folder.appendingPathComponent($0)) }
 
         try await convertToAllTargets(url, expecting: [.png, .jpg, .txt])
@@ -103,7 +103,7 @@ struct ConversionTests {
 
     @Test func documents() async throws {
         let rtf = folder.appendingPathComponent("text.rtf")
-        let text = NSAttributedString(string: String(repeating: "Droplime wandelt Dateien um. ", count: 400))
+        let text = NSAttributedString(string: String(repeating: "Droplime converts files. ", count: 400))
         try text.rtf(from: NSRange(location: 0, length: text.length))!.write(to: rtf)
         try await convertToAllTargets(rtf, expecting: [.docx, .pdf, .txt, .html])
 
@@ -113,7 +113,7 @@ struct ConversionTests {
     }
 
     @Test func audio() async throws {
-        let wav = folder.appendingPathComponent("ton.wav")
+        let wav = folder.appendingPathComponent("tone.wav")
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44100)!
         buffer.frameLength = 44100
@@ -123,9 +123,9 @@ struct ConversionTests {
         try await convertToAllTargets(wav, expecting: expected)
     }
 
-    @Test(.enabled(if: FFmpegConverter() != nil, "Braucht ffmpeg, um ein Testvideo zu erzeugen"))
+    @Test(.enabled(if: FFmpegConverter() != nil, "Needs ffmpeg to create a test video"))
     func video() async throws {
-        let mov = folder.appendingPathComponent("film.mov")
+        let mov = folder.appendingPathComponent("movie.mov")
         try await ExternalTool.run(ExternalTool.find("ffmpeg")!, [
             "-hide_banner", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=10",
             "-f", "lavfi", "-i", "sine=duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", mov.path,

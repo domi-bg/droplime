@@ -1,8 +1,8 @@
 import AppKit
 
-/// Erkennt systemweit, ob gerade Dateien gezogen werden und ob dabei eine
-/// Modifier-Taste gedrückt wird. Pollt Maus-, Tasten- und Drag-Pasteboard-Zustand,
-/// dafür ist keine Bedienungshilfen-Berechtigung nötig.
+/// Detects system-wide whether files are being dragged and whether a
+/// modifier key gets tapped meanwhile. Polls mouse, key and drag pasteboard state,
+/// so no Accessibility permission is needed.
 @MainActor
 final class DragWatcher {
     var onModifierTap: ((WheelMode) -> Void)?
@@ -26,7 +26,7 @@ final class DragWatcher {
         let mouseDown = NSEvent.pressedMouseButtons & 1 != 0
 
         if mouseDown {
-            // Ein neuer Drag schreibt ins Drag-Pasteboard und erhöht dessen changeCount.
+            // A new drag writes to the drag pasteboard and bumps its changeCount.
             if !isFileDrag, dragPasteboard.changeCount != baselineChangeCount {
                 isFileDrag = dragPasteboard.types?.contains(.fileURL) ?? false
                 baselineChangeCount = dragPasteboard.changeCount

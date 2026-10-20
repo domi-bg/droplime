@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 private let ditto = URL(fileURLWithPath: "/usr/bin/ditto")
 
-/// Packt Dateien und Ordner in ein ZIP – wie „Komprimieren“ im Finder.
+/// Packs files and folders into a ZIP, like "Compress" in Finder.
 struct ZipTool: Tool {
     var label: String { L.toolZip }
 
@@ -17,7 +17,7 @@ struct ZipTool: Tool {
             try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", "--keepParent", urls[0].path, output.path])
             return [output]
         }
-        // Mehrere Objekte: in einen Temp-Ordner kopieren und den Inhalt packen.
+        // Several items: copy into a temp folder and zip its contents.
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -28,7 +28,7 @@ struct ZipTool: Tool {
     }
 }
 
-/// Entpackt ZIP-Dateien in einen Ordner daneben.
+/// Unzips ZIP files into a folder next to them.
 struct UnzipTool: Tool {
     var label: String { L.toolUnzip }
 

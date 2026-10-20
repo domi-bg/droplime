@@ -21,9 +21,9 @@ struct ToolTests {
         try #require(service.tools(for: urls).first { $0.label == label })
     }
 
-    /// JPEG 80×40 mit GPS-Daten und EXIF-Ausrichtung 6 (= 90° gedreht anzeigen).
+    /// JPEG 80×40 with GPS data and EXIF orientation 6 (= display rotated by 90°).
     private func photo() throws -> URL {
-        let url = folder.appendingPathComponent("foto.jpg")
+        let url = folder.appendingPathComponent("photo.jpg")
         let context = CGContext(data: nil, width: 80, height: 40, bitsPerComponent: 8, bytesPerRow: 0,
                                 space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
         context.setFillColor(CGColor(red: 0.6, green: 0.8, blue: 0.2, alpha: 1))
@@ -74,7 +74,7 @@ struct ToolTests {
         #expect(properties(photo)[kCGImagePropertyGPSDictionary] != nil)
         #expect(properties(clean)[kCGImagePropertyGPSDictionary] == nil)
         #expect(properties(clean)[kCGImagePropertyOrientation] as? Int == 6)
-        #expect(clean.lastPathComponent == "foto\(L.suffixNoMetadata).jpg")
+        #expect(clean.lastPathComponent == "photo\(L.suffixNoMetadata).jpg")
     }
 
     @Test func pdfTools() async throws {
@@ -94,29 +94,29 @@ struct ToolTests {
         let compressed = try await tool(L.toolCompress, for: [a]).run([a])[0]
         #expect(PDFDocument(url: compressed)?.pageCount == 2)
 
-        let single = pdf("einzeln.pdf", pages: 1)
+        let single = pdf("single.pdf", pages: 1)
         await #expect(throws: ConversionError.self) { try await tool(L.toolSplit, for: [single]).run([single]) }
     }
 
     @Test func zipRoundTrip() async throws {
-        let sub = folder.appendingPathComponent("Ordner", isDirectory: true)
+        let sub = folder.appendingPathComponent("Folder", isDirectory: true)
         try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
-        try Data("hallo".utf8).write(to: sub.appendingPathComponent("datei.txt"))
-        let note = folder.appendingPathComponent("notiz.txt")
-        try Data("notiz".utf8).write(to: note)
+        try Data("hello".utf8).write(to: sub.appendingPathComponent("file.txt"))
+        let note = folder.appendingPathComponent("note.txt")
+        try Data("note".utf8).write(to: note)
 
         let zip = try await tool(L.toolZip, for: [sub, note]).run([sub, note])[0]
         #expect(zip.lastPathComponent == "\(L.archiveFileName).zip")
         #expect(labels([zip]) == [L.toolUnzip])
 
         let unpacked = try await tool(L.toolUnzip, for: [zip]).run([zip])[0]
-        #expect(try String(contentsOf: unpacked.appendingPathComponent("Ordner/datei.txt"), encoding: .utf8) == "hallo")
-        #expect(FileManager.default.fileExists(atPath: unpacked.appendingPathComponent("notiz.txt").path))
+        #expect(try String(contentsOf: unpacked.appendingPathComponent("Folder/file.txt"), encoding: .utf8) == "hello")
+        #expect(FileManager.default.fileExists(atPath: unpacked.appendingPathComponent("note.txt").path))
     }
 
-    @Test(.enabled(if: ExternalTool.find("ffmpeg") != nil, "Braucht ffmpeg, um ein Testvideo zu erzeugen"))
+    @Test(.enabled(if: ExternalTool.find("ffmpeg") != nil, "Needs ffmpeg to create a test video"))
     func videoTools() async throws {
-        let mov = folder.appendingPathComponent("film.mov")
+        let mov = folder.appendingPathComponent("movie.mov")
         try await ExternalTool.run(ExternalTool.find("ffmpeg")!, [
             "-hide_banner", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=10",
             "-f", "lavfi", "-i", "sine=duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", mov.path,

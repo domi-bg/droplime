@@ -2,7 +2,7 @@ import AppKit
 import PDFKit
 import UniformTypeIdentifiers
 
-/// PDF → Bilder (eine Datei pro Seite) oder Text.
+/// PDF → images (one file per page) or text.
 struct PDFConverter: Converter {
     func targets(for type: UTType) -> [Format] {
         type.conforms(to: .pdf) ? [.png, .jpg, .txt] : []
@@ -28,7 +28,7 @@ struct PDFConverter: Converter {
         }
     }
 
-    /// Rendert mit 144 dpi (doppelte PDF-Auflösung) auf weißem Hintergrund.
+    /// Renders at 144 dpi (twice the PDF resolution) on a white background.
     private static func render(_ page: PDFPage, as format: Format, to url: URL) throws {
         let scale: CGFloat = 2
         let bounds = page.bounds(for: .mediaBox)

@@ -1,9 +1,9 @@
 import AppKit
 import UniformTypeIdentifiers
 
-/// Textdokumente über das in macOS eingebaute `textutil`; PDF über den Drucken-Dialog von AppKit.
+/// Text documents via the built-in `textutil`; PDF via AppKit printing.
 struct DocumentConverter: Converter {
-    /// Format → Name, den textutil bei `-convert` erwartet.
+    /// Format → name textutil expects for `-convert`.
     private static let textutilFormats: [(Format, String)] = [
         (.docx, "docx"), (.rtf, "rtf"), (.html, "html"), (.txt, "txt"), (.odt, "odt"),
     ]
@@ -30,7 +30,7 @@ struct DocumentConverter: Converter {
                                    ["-convert", name, "-output", output.path, input.path])
     }
 
-    /// Setzt das Dokument in A4-Seiten und „druckt“ es in eine PDF-Datei.
+    /// Lays out the document on A4 pages and "prints" it to a PDF file.
     @MainActor
     private static func printToPDF(_ input: URL, output: URL) throws {
         let text = try NSAttributedString(url: input, options: [:], documentAttributes: nil)

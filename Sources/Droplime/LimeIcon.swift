@@ -1,14 +1,14 @@
 import AppKit
 
-/// Zeichnet das Droplime-Symbol: nur die Fruchtsegmente einer Limette, ohne Schale –
-/// ein Segment ist herausgezogen, wie das gewählte Feld im Rad.
-/// Wird auch von `scripts/make-icon.swift` verwendet und darf daher nichts anderes aus der App benutzen.
+/// Draws the Droplime symbol: just the segments of a lime, no rind,
+/// with one segment popped out like the selected segment in the wheel.
+/// Also used by `scripts/make-icon.swift`, so it must not depend on anything else in the app.
 enum LimeIcon {
     static let segmentCount = 8
-    /// Das herausgezogene Segment (0 = oben, im Uhrzeigersinn).
+    /// The popped-out segment (0 = top, clockwise).
     static let poppedSegment = 1
 
-    /// Einfarbige Vorlage für die Menüleiste; macOS färbt sie passend zum Hell-/Dunkelmodus.
+    /// Monochrome template for the menu bar; macOS tints it for light/dark mode.
     static func menuBarImage() -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
             let c = NSPoint(x: rect.midX - 0.6, y: rect.midY - 0.6)
@@ -25,7 +25,7 @@ enum LimeIcon {
         return image
     }
 
-    /// Farbiges App-Icon in der macOS-Form (abgerundetes Quadrat mit Rand, 1024er Raster).
+    /// Full-color app icon in the macOS shape (rounded square with margin, 1024 grid).
     static func appIcon(size: CGFloat) -> NSImage {
         NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
             let s = rect.width / 1024
@@ -55,7 +55,7 @@ enum LimeIcon {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let membrane = 30 * s, corner = 24 * s
 
-        // Ruhende Segmente: ein gemeinsamer radialer Verlauf, innen heller.
+        // Resting segments: one shared radial gradient, lighter towards the center.
         context.beginTransparencyLayer(auxiliaryInfo: nil)
         NSColor.black.set()
         for i in 0..<segmentCount where i != poppedSegment {
@@ -69,7 +69,7 @@ enum LimeIcon {
             .draw(fromCenter: c, radius: 0, toCenter: c, radius: r, options: [])
         context.endTransparencyLayer()
 
-        // Herausgezogenes Segment: heller, mit Schatten.
+        // Popped-out segment: brighter, with a shadow.
         let poppedCenter = offset(c, segment: poppedSegment, by: 46 * s)
         let shadow = NSShadow()
         shadow.shadowColor = NSColor.black.withAlphaComponent(0.5)
@@ -90,23 +90,23 @@ enum LimeIcon {
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    /// Verschiebt einen Punkt in Richtung der Mitte von Segment i.
+    /// Moves a point towards the middle of segment i.
     private static func offset(_ p: NSPoint, segment i: Int, by distance: CGFloat) -> NSPoint {
         let mid = CGFloat.pi / 2 - CGFloat(i) * 2 * .pi / CGFloat(segmentCount)
         return NSPoint(x: p.x + cos(mid) * distance, y: p.y + sin(mid) * distance)
     }
 
-    /// Ein Fruchtsegment: Keil zwischen zwei nach innen versetzten Radiallinien und dem Außenkreis.
-    /// Wird gefüllt und mit runden Ecken umrandet; die Kontur (Breite 2·corner) rundet die Ecken ab.
+    /// A lime segment: wedge between two inward-offset radial lines and the outer circle.
+    /// Filled and stroked with round joins; the stroke (width 2·corner) rounds the corners.
     private static func segment(_ i: Int, of count: Int, center c: NSPoint, radius: CGFloat,
                                 membrane: CGFloat, corner: CGFloat) -> NSBezierPath {
         let half = CGFloat.pi / CGFloat(count)
         let mid = CGFloat.pi / 2 - CGFloat(i) * 2 * half
-        let d = membrane / 2 + corner        // Abstand der Kanten von der Radiallinie
+        let d = membrane / 2 + corner        // distance of the edges from the radial line
         let outer = radius - corner
 
         func edgePoint(_ edgeAngle: CGFloat, inward: CGFloat) -> NSPoint {
-            // Punkt auf der um d nach innen versetzten Kante, im Abstand `outer` von der Mitte.
+            // Point on the edge offset inward by d, at distance `outer` from the center.
             let t = sqrt(outer * outer - d * d)
             return NSPoint(x: c.x + cos(edgeAngle) * t + cos(edgeAngle + inward) * d,
                            y: c.y + sin(edgeAngle) * t + sin(edgeAngle + inward) * d)

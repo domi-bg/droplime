@@ -1,7 +1,7 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Optional: Markdown und E-Books über Pandoc. Braucht `brew install pandoc`.
+/// Optional: Markdown and e-books via Pandoc. Needs `brew install pandoc`.
 struct PandocConverter: Converter {
     let executable: URL
 

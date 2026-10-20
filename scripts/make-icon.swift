@@ -1,5 +1,5 @@
-// Erzeugt Resources/AppIcon.icns aus LimeIcon.swift.
-// Aufruf über scripts/make-icon.sh
+// Generates Resources/AppIcon.icns from LimeIcon.swift.
+// Run via scripts/make-icon.sh
 import AppKit
 
 let iconset = URL(fileURLWithPath: CommandLine.arguments[1])

@@ -9,8 +9,8 @@ struct FileActionTests {
 
     init() throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("DroplimeActions-\(UUID().uuidString)")
-        source = root.appendingPathComponent("quelle", isDirectory: true)
-        target = root.appendingPathComponent("ziel", isDirectory: true)
+        source = root.appendingPathComponent("source", isDirectory: true)
+        target = root.appendingPathComponent("target", isDirectory: true)
         try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
     }
@@ -22,24 +22,24 @@ struct FileActionTests {
     }
 
     @Test func copyKeepsOriginalAndAvoidsOverwriting() throws {
-        let original = try file("bericht.pdf")
-        _ = try file("bericht.pdf", in: target)
+        let original = try file("report.pdf")
+        _ = try file("report.pdf", in: target)
 
         let copies = try FileAction.copy([original], to: target)
 
-        #expect(copies.map(\.lastPathComponent) == ["bericht 2.pdf"])
+        #expect(copies.map(\.lastPathComponent) == ["report 2.pdf"])
         #expect(FileManager.default.fileExists(atPath: original.path))
-        #expect(try String(contentsOf: target.appendingPathComponent("bericht.pdf"), encoding: .utf8) == "bericht.pdf")
+        #expect(try String(contentsOf: target.appendingPathComponent("report.pdf"), encoding: .utf8) == "report.pdf")
     }
 
     @Test func copyWorksWithFolders() throws {
-        let folder = source.appendingPathComponent("Fotos", isDirectory: true)
+        let folder = source.appendingPathComponent("Photos", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         _ = try file("a.jpg", in: folder)
 
         try FileAction.copy([folder], to: target)
 
-        #expect(FileManager.default.fileExists(atPath: target.appendingPathComponent("Fotos/a.jpg").path))
+        #expect(FileManager.default.fileExists(atPath: target.appendingPathComponent("Photos/a.jpg").path))
     }
 
     @Test func moveRemovesOriginalAndSkipsSameFolder() throws {
@@ -56,6 +56,6 @@ struct FileActionTests {
         let a = try file("a.txt"), b = try file("b.txt")
 
         #expect(FileAction.pathText([a, b]) == "\(a.path)\n\(b.path)")
-        #expect(FileAction.folders(of: [a, b, target]).map(\.lastPathComponent) == ["quelle", "ziel"])
+        #expect(FileAction.folders(of: [a, b, target]).map(\.lastPathComponent) == ["source", "target"])
     }
 }

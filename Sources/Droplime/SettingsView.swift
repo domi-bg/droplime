@@ -2,12 +2,12 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: Settings
-    /// Formate, die auf diesem Mac erzeugt werden können.
+    /// Formats that can be produced on this Mac.
     let available: Set<Format>
-    /// Zusatzwerkzeug → gefunden?
+    /// Extra tool → found?
     let tools: [(name: String, found: Bool, install: String)]
 
-    /// Welches Werkzeug ein sonst nicht verfügbares Format freischaltet.
+    /// Which extra tool unlocks an otherwise unavailable format.
     private static let requiredTool: [String: String] = [
         "mkv": "FFmpeg", "webm": "FFmpeg", "mp3": "FFmpeg", "flac": "FFmpeg", "ogg": "FFmpeg", "opus": "FFmpeg",
         "xlsx": "LibreOffice", "ods": "LibreOffice", "csv": "LibreOffice", "pptx": "LibreOffice",

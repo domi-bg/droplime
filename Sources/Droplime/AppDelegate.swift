@@ -12,10 +12,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tools: [(name: String, found: Bool, install: String)] = []
     private var settingsWindow: NSWindow?
     private var languageObserver: AnyCancellable?
-    /// Zielformate für die Dateien, die gerade gezogen werden.
+    /// Target formats for the files currently being dragged.
     private var currentTargets: [Format] = []
     private let toolService = ToolService.standard()
-    /// Werkzeuge für die Dateien, die gerade gezogen werden.
+    /// Tools for the files currently being dragged.
     private var currentTools: [Tool] = []
     private static let maxWheelItems = 10
 
@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let ffmpeg = FFmpegConverter()
         let libreOffice = LibreOfficeConverter()
         let pandoc = PandocConverter()
-        // Reihenfolge = Vorrang bei gleichen Zielformaten.
+        // Order = priority when several converters offer the same format.
         let optional: [Converter?] = [libreOffice, pandoc]
         service = ConversionService(converters:
             [ImageConverter(), PDFConverter()] + optional.compactMap { $0 }
@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = LimeIcon.menuBarImage()
         buildMenu()
-        // Sprache sofort umschalten: Menü und Fenstertitel neu setzen (SwiftUI aktualisiert sich selbst).
+        // Switch language immediately: rebuild menu and window title (SwiftUI updates itself).
         languageObserver = settings.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
             self?.buildMenu()
             self?.settingsWindow?.title = L.settingsWindowTitle
@@ -101,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let format = currentTargets.first(where: { $0.label == item }) { convert(urls, to: format, outer: outer) }
         case .actions:
             guard let action = FileAction.allCases.first(where: { $0.label == item }) else { return }
-            // Erst nach dem Ende des Drags ausführen, damit Dialoge (z. B. Ordnerwahl) nicht mitten im Drag aufgehen.
+            // Run after the drag has ended so dialogs (e.g. the folder picker) don't open mid-drag.
             DispatchQueue.main.async { [weak self] in
                 do {
                     if try action.perform(on: urls), action != .airDrop, action != .float {
@@ -134,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             let errors = await service.convert(urls, to: format, replaceOriginals: replace).errors
             if errors.isEmpty {
-                print("✓ \(urls.count) Datei(en) → \(format.label)\(replace ? " (Original im Papierkorb)" : "")")
+                print("✓ \(urls.count) file(s) → \(format.label)\(replace ? " (original moved to Trash)" : "")")
                 NSSound(named: "Glass")?.play()
             } else {
                 showError(L.conversionFailed, errors.map(\.localizedDescription).joined(separator: "\n\n"))

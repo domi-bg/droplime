@@ -1,7 +1,7 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Ein Zielformat, wie es im Rad angezeigt wird.
+/// A target format as shown in the wheel.
 struct Format: Hashable {
     let label: String
     let ext: String
@@ -39,7 +39,7 @@ struct Format: Hashable {
     static let ogg = Format(label: "OGG", ext: "ogg")
     static let opus = Format(label: "Opus", ext: "opus")
 
-    /// Alle Zielformate, gruppiert für die Einstellungen.
+    /// All target formats, grouped for Settings.
     static var groups: [(title: String, formats: [Format])] {
         [
             (L.groupImages, [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]),
@@ -52,7 +52,7 @@ struct Format: Hashable {
 }
 
 protocol Converter {
-    /// Formate, in die eine Datei dieses Typs umgewandelt werden kann.
+    /// Formats a file of this type can be converted to.
     func targets(for type: UTType) -> [Format]
     func convert(_ input: URL, to format: Format, output: URL) async throws
 }
@@ -63,7 +63,7 @@ struct ConversionError: LocalizedError {
 }
 
 extension UTType {
-    /// Prüft, ob der Typ zu einem der angegebenen Bezeichner gehört.
+    /// Whether the type conforms to one of the given identifiers.
     func conforms(toAnyOf identifiers: [String]) -> Bool {
         identifiers.contains { id in UTType(id).map { conforms(to: $0) } ?? false }
     }
@@ -76,8 +76,8 @@ final class ConversionService {
         self.converters = converters
     }
 
-    /// Formate, die für alle Dateien möglich sind, ohne das bisherige Format.
-    /// Bei Überschneidungen gewinnt der Konverter, der in der Liste zuerst steht.
+    /// Formats possible for all files, excluding their current format.
+    /// When converters overlap, the one listed first wins.
     func targets(for urls: [URL]) -> [Format] {
         let perFile = urls.map { url -> [Format] in
             guard let type = Self.type(of: url) else { return [] }
@@ -90,7 +90,7 @@ final class ConversionService {
         return first.filter { format in perFile.allSatisfy { $0.contains(format) } }
     }
 
-    /// Typische Eingabetypen, um herauszufinden, welche Zielformate überhaupt erzeugt werden können.
+    /// Typical input types, used to find out which target formats can be produced at all.
     private static let probeTypes: [UTType] = [
         .png, .pdf, .rtf, .mpeg4Movie, .mp3, .wav,
         UTType("org.openxmlformats.wordprocessingml.document"), UTType("org.openxmlformats.spreadsheetml.sheet"),
@@ -98,15 +98,15 @@ final class ConversionService {
         UTType(filenameExtension: "md"),
     ].compactMap { $0 }
 
-    /// Alle Formate, die mit den vorhandenen Konvertern auf diesem Mac erzeugt werden können.
+    /// All formats the available converters can produce on this Mac.
     var producibleFormats: Set<Format> {
         Set(Self.probeTypes.flatMap { type in converters.flatMap { $0.targets(for: type) } })
     }
 
-    /// Wandelt jede Datei um und legt das Ergebnis daneben ab.
-    /// Mit `replaceOriginals` landen die Originale erfolgreich umgewandelter Dateien im Papierkorb –
-    /// nie endgültig gelöscht, und bei Fehlern bleibt das Original immer liegen.
-    /// Gibt die erfolgreich umgewandelten Eingabedateien und die Fehler zurück.
+    /// Converts each file and puts the result next to it.
+    /// With `replaceOriginals`, originals of successfully converted files go to the Trash,
+    /// never deleted for good, and on failure the original always stays.
+    /// Returns the successfully converted input files and the errors.
     func convert(_ urls: [URL], to format: Format, replaceOriginals: Bool = false,
                  trash: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }
     ) async -> (succeeded: [URL], errors: [Error]) {
@@ -130,7 +130,7 @@ final class ConversionService {
         (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
     }
 
-    /// "foto.png" → "foto.jpg", bei Kollision "foto 2.jpg", "foto 3.jpg" …
+    /// "photo.png" → "photo.jpg", on collision "photo 2.jpg", "photo 3.jpg" …
     static func outputURL(for input: URL, ext: String, suffix: String = "") -> URL {
         let folder = input.deletingLastPathComponent()
         let base = input.deletingPathExtension().lastPathComponent + suffix

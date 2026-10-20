@@ -1,6 +1,6 @@
 import AppKit
 
-/// Aktionen im Ctrl-Rad. Funktionieren auch mit Ordnern und gemischten Auswahlen.
+/// Actions in the Ctrl wheel. They also work with folders and mixed selections.
 enum FileAction: String, CaseIterable {
     case airDrop, copy, move, copyPath, terminal, float
 
@@ -15,7 +15,7 @@ enum FileAction: String, CaseIterable {
         }
     }
 
-    /// Führt die Aktion aus. Gibt false zurück, wenn der Nutzer abgebrochen hat.
+    /// Performs the action. Returns false if the user cancelled.
     @MainActor
     func perform(on urls: [URL]) throws -> Bool {
         switch self {
@@ -42,14 +42,14 @@ enum FileAction: String, CaseIterable {
         return true
     }
 
-    // MARK: - Bausteine (ohne Oberfläche, damit testbar)
+    // MARK: - Building blocks (no UI, so they're testable)
 
-    /// Pfade, einer pro Zeile.
+    /// Paths, one per line.
     static func pathText(_ urls: [URL]) -> String {
         urls.map(\.path).joined(separator: "\n")
     }
 
-    /// Ordner zum Öffnen im Terminal: bei Dateien der enthaltende Ordner, ohne Doppelte.
+    /// Folders to open in Terminal: the containing folder for files, without duplicates.
     static func folders(of urls: [URL]) -> [URL] {
         var seen = Set<URL>()
         return urls.map { $0.hasDirectoryPath ? $0 : $0.deletingLastPathComponent() }
@@ -68,7 +68,7 @@ enum FileAction: String, CaseIterable {
     @discardableResult
     static func move(_ urls: [URL], to folder: URL) throws -> [URL] {
         try urls.compactMap { url in
-            // Liegt die Datei schon dort, gibt es nichts zu tun.
+            // Already in that folder: nothing to do.
             guard url.deletingLastPathComponent().standardizedFileURL != folder.standardizedFileURL else { return nil }
             let destination = uniqueDestination(for: url, in: folder)
             try FileManager.default.moveItem(at: url, to: destination)
@@ -76,7 +76,7 @@ enum FileAction: String, CaseIterable {
         }
     }
 
-    /// "bericht.pdf" → "bericht 2.pdf", falls schon vorhanden; Ordner ohne Endung genauso.
+    /// "report.pdf" → "report 2.pdf" if taken; folders without extension work the same.
     static func uniqueDestination(for url: URL, in folder: URL) -> URL {
         let ext = url.pathExtension
         let base = url.deletingPathExtension().lastPathComponent

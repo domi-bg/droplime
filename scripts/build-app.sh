@@ -1,5 +1,5 @@
 #!/bin/sh
-# Baut build/Droplime.app (Release, mit Icon, ohne Dock-Symbol) und signiert ad hoc.
+# Builds build/Droplime.app (release, with icon, no Dock icon) and signs it ad hoc.
 set -e
 cd "$(dirname "$0")/.."
 swift build -c release
@@ -28,4 +28,4 @@ cat > "$app/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 codesign --force --sign - "$app"
-echo "Fertig: $app"
+echo "Done: $app"

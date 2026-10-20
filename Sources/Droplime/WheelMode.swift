@@ -3,7 +3,7 @@ import AppKit
 enum WheelMode {
     case convert, tools, actions
 
-    /// Shift → Konvertieren, Cmd → Werkzeuge, Ctrl → Aktionen.
+    /// Shift → Convert, Cmd → Tools, Ctrl → Actions.
     init?(pressed flags: NSEvent.ModifierFlags) {
         if flags.contains(.shift) { self = .convert }
         else if flags.contains(.command) { self = .tools }
@@ -19,7 +19,7 @@ enum WheelMode {
         }
     }
 
-    /// Feste Einträge; beim Konvertieren und bei Werkzeugen hängen sie von den gezogenen Dateien ab.
+    /// Fixed entries; for Convert and Tools they depend on the dragged files.
     var items: [String] {
         switch self {
         case .convert, .tools: return []

@@ -1,17 +1,17 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Ein Werkzeug im Cmd-Rad. Werkzeuge erzeugen immer neue Dateien und lassen die Originale unangetastet.
+/// A tool in the Cmd wheel. Tools always create new files and leave the originals untouched.
 protocol Tool {
     var label: String { get }
-    /// Ob das Werkzeug für genau diese Auswahl passt (Typen in Reihenfolge der Dateien).
+    /// Whether the tool fits exactly this selection (types in file order).
     func applies(to types: [UTType]) -> Bool
-    /// Führt das Werkzeug aus und gibt die erzeugten Dateien zurück.
+    /// Runs the tool and returns the files it created.
     func run(_ urls: [URL]) async throws -> [URL]
 }
 
 extension Tool {
-    /// Für Werkzeuge, die jede Datei einzeln bearbeiten.
+    /// For tools that process each file on its own.
     func eachFile(_ urls: [URL], _ body: (URL) async throws -> URL) async throws -> [URL] {
         var outputs: [URL] = []
         for url in urls { outputs.append(try await body(url)) }
@@ -32,7 +32,7 @@ final class ToolService {
         return tools.filter { $0.applies(to: types) }
     }
 
-    /// Alle Werkzeuge in Reihenfolge der Wichtigkeit.
+    /// All tools, most important first.
     static func standard() -> ToolService {
         ToolService(tools: [
             ResizeImageTool(), RotateImageTool(), StripMetadataTool(),

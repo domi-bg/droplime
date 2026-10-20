@@ -17,7 +17,7 @@ private func export(_ asset: AVAsset, preset: String, fileType: AVFileType, to o
 
 private func isVideo(_ type: UTType) -> Bool { type.conforms(to: .movie) && playable.contains(type.identifier) }
 
-/// Video in HEVC, höchstens 1080p – meist deutlich kleiner bei kaum sichtbarem Unterschied.
+/// Video as HEVC, at most 1080p: usually much smaller with hardly visible difference.
 struct CompressVideoTool: Tool {
     var label: String { L.toolCompress }
 
@@ -32,7 +32,7 @@ struct CompressVideoTool: Tool {
     }
 }
 
-/// Entfernt die Tonspur, ohne das Bild neu zu kodieren.
+/// Removes the audio track without re-encoding the video.
 struct RemoveAudioTool: Tool {
     var label: String { L.toolRemoveAudio }
 
@@ -56,7 +56,7 @@ struct RemoveAudioTool: Tool {
     }
 }
 
-/// Audio als AAC mit 96 kbit/s.
+/// Audio as AAC at 96 kbit/s.
 struct CompressAudioTool: Tool {
     var label: String { L.toolCompress }
 

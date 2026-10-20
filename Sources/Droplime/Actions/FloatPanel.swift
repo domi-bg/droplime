@@ -1,17 +1,17 @@
 import AppKit
 import QuickLookThumbnailing
 
-/// Kleines, immer sichtbares Fenster mit einer Vorschau der Dateien.
-/// Die Dateien lassen sich jederzeit wieder herausziehen – auch direkt ins Droplime-Rad.
+/// Small always-on-top window with a preview of the files.
+/// The files can be dragged out again at any time, even straight into the Droplime wheel.
 @MainActor
 final class FloatPanel: NSPanel, NSWindowDelegate {
-    /// Offene Fenster festhalten, bis sie geschlossen werden.
+    /// Keeps open windows alive until they're closed.
     private static var open: Set<FloatPanel> = []
 
     static func show(_ urls: [URL]) {
         let panel = FloatPanel(urls: urls)
         open.insert(panel)
-        // Neben den Mauszeiger, versetzt, damit mehrere Fenster nicht exakt übereinander liegen.
+        // Next to the cursor, offset so several windows don't stack exactly.
         let mouse = NSEvent.mouseLocation
         let offset = CGFloat(open.count - 1) * 24
         panel.setFrameTopLeftPoint(NSPoint(x: mouse.x + 40 + offset, y: mouse.y + 80 - offset))
@@ -36,7 +36,7 @@ final class FloatPanel: NSPanel, NSWindowDelegate {
     }
 }
 
-/// Zeigt die Vorschau und dient als Ziehquelle für die Dateien.
+/// Shows the preview and acts as the drag source for the files.
 private final class FloatView: NSView, NSDraggingSource {
     private let urls: [URL]
     private var thumbnail: NSImage
@@ -67,7 +67,7 @@ private final class FloatView: NSView, NSDraggingSource {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        // Seitenverhältnis erhalten
+        // keep the aspect ratio
         let size = thumbnail.size, box = imageRect
         let scale = min(box.width / max(size.width, 1), box.height / max(size.height, 1))
         let drawn = NSSize(width: size.width * scale, height: size.height * scale)

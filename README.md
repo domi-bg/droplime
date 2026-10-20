@@ -1,144 +1,148 @@
 <p align="center">
-  <img src="docs/images/icon.png" width="160" alt="Droplime-Icon">
+  <img src="docs/images/icon.png" width="160" alt="Droplime icon">
 </p>
 
 <h1 align="center">Droplime</h1>
 
 <p align="center">
-  <b>Ziehen. Tippen. Ablegen.</b><br>
-  Dateien konvertieren, bearbeiten und verschicken – direkt beim Ziehen, ohne ein Fenster zu öffnen.
+  <b>Drag. Tap. Drop.</b><br>
+  Convert, edit and share files right while you drag them, without opening a single window.
 </p>
 
 <p align="center">
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1d1f1b?logo=apple">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-5.10-a8d63a?logo=swift&logoColor=white">
-  <img alt="Lizenz: MIT" src="https://img.shields.io/badge/Lizenz-MIT-a8d63a">
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-a8d63a">
   <img alt="Offline" src="https://img.shields.io/badge/100%25-offline-1d1f1b">
+</p>
+
+<p align="center">
+  <img src="docs/images/demo.gif" width="960" alt="Droplime demo: drag a file, tap a key, drop it on the wheel">
 </p>
 
 ---
 
-Droplime lebt unauffällig in der Menüleiste. Während du eine Datei ziehst – aus dem Finder, vom Schreibtisch, aus fast jeder App – tippst du kurz eine Taste, und am Mauszeiger öffnet sich ein Rad mit genau den Möglichkeiten, die zu dieser Datei passen. Lass die Datei auf einem Feld los, und das Ergebnis liegt direkt neben dem Original.
+Droplime lives quietly in your menu bar. While you drag a file (from Finder, the desktop or almost any app), tap a key and a wheel opens at your cursor with exactly the options that fit that file. Release the file on a segment and the result appears right next to the original.
 
-| Taste beim Ziehen | Rad | Wofür |
+| Key while dragging | Wheel | What for |
 |---|---|---|
-| <kbd>⇧ Shift</kbd> | **Konvertieren** | in ein anderes Format umwandeln |
-| <kbd>⌘ Cmd</kbd> | **Werkzeuge** | verkleinern, zusammenfügen, Metadaten entfernen, packen … |
-| <kbd>⌃ Ctrl</kbd> | **Aktionen** | AirDrop, kopieren, verschieben, Pfad, Terminal, Float |
+| <kbd>⇧ Shift</kbd> | **Convert** | turn it into another format |
+| <kbd>⌘ Cmd</kbd> | **Tools** | resize, merge, strip metadata, zip … |
+| <kbd>⌃ Ctrl</kbd> | **Actions** | AirDrop, copy, move, path, Terminal, Float |
 
-Eine andere Taste wechselt das Rad. Loslassen in der Mitte oder außerhalb bricht ab – die Datei landet dann ganz normal dort, wo du sie hingezogen hast.
+Tapping another key switches the wheel. Releasing in the center or outside the wheel cancels, and the file lands wherever you dragged it, as usual.
 
-## Inhalt
+## Contents
 
-- [Konvertieren](#konvertieren)
-- [Original behalten oder ersetzen](#original-behalten-oder-ersetzen)
-- [Werkzeuge](#werkzeuge)
-- [Aktionen](#aktionen)
-- [Einstellungen](#einstellungen)
-- [Datenschutz](#datenschutz)
+- [Convert](#convert)
+- [Keep or replace the original](#keep-or-replace-the-original)
+- [Tools](#tools)
+- [Actions](#actions)
+- [Settings](#settings)
+- [Privacy](#privacy)
 - [Installation](#installation)
-- [Entwicklung](#entwicklung)
-- [Grenzen und Pläne](#grenzen-und-pläne)
+- [Development](#development)
+- [Limitations and plans](#limitations-and-plans)
 
-## Konvertieren
+## Convert
 
-<img src="docs/images/wheel-convert.png" width="340" align="right" alt="Konvertieren-Rad mit einer PNG-Datei">
+<img src="docs/images/wheel-convert.png" width="340" align="right" alt="Convert wheel for a PNG file">
 
-Das Rad zeigt nur Formate, in die sich die gezogene Datei **wirklich** umwandeln lässt – das aktuelle Format fehlt, und bei mehreren Dateien bleiben nur Formate übrig, die für alle passen.
+The wheel only shows formats the dragged file can **actually** be converted to. The current format is left out, and with several files only the formats that work for all of them remain.
 
-Grundausstattung, ganz ohne Zusatzsoftware:
+Built in, no extra software needed:
 
-- **Bilder** – PNG, JPG, HEIC, TIFF, GIF, BMP, SVG und RAW lesen → PNG, JPG, HEIC, TIFF, GIF, BMP, **PDF**
-- **PDF** → PNG oder JPG (eine Datei pro Seite), **TXT** (Text herausziehen)
-- **Textdokumente** – DOCX, DOC, ODT, RTF, HTML, TXT → DOCX, ODT, RTF, HTML, TXT, **PDF**
-- **Video** – MP4, MOV, M4V → MP4, MOV, **M4A** (nur den Ton)
-- **Audio** – MP3, M4A, WAV, AIFF, FLAC, CAF → M4A, WAV, AIFF
+- **Images**: reads PNG, JPG, HEIC, TIFF, GIF, BMP, SVG and RAW → PNG, JPG, HEIC, TIFF, GIF, BMP, **PDF**
+- **PDF** → PNG or JPG (one file per page), **TXT** (extract the text)
+- **Text documents**: DOCX, DOC, ODT, RTF, HTML, TXT → DOCX, ODT, RTF, HTML, TXT, **PDF**
+- **Video**: MP4, MOV, M4V → MP4, MOV, **M4A** (audio only)
+- **Audio**: MP3, M4A, WAV, AIFF, FLAC, CAF → M4A, WAV, AIFF
 
 <br clear="right">
 
-Mit optionalen Zusatzwerkzeugen wird das Rad größer – Droplime findet sie automatisch und bietet nur an, was mit der installierten Version tatsächlich funktioniert:
+Optional extra tools make the wheel bigger. Droplime finds them automatically and only offers what actually works with the installed version:
 
-| Werkzeug | Installation | Zusätzlich |
+| Tool | Install | Adds |
 |---|---|---|
-| [FFmpeg](https://ffmpeg.org) | `brew install ffmpeg` | MKV, WebM, animiertes GIF aus Video, MP3, FLAC, Opus, OGG – und Videos in Formaten, die macOS selbst nicht liest |
-| [LibreOffice](https://www.libreoffice.org) | `brew install --cask libreoffice` | originalgetreues DOCX → PDF, Tabellen (XLSX, ODS, CSV), Präsentationen (PPTX → PDF) |
+| [FFmpeg](https://ffmpeg.org) | `brew install ffmpeg` | MKV, WebM, animated GIF from video, MP3, FLAC, Opus, OGG, and videos in formats macOS can't read itself |
+| [LibreOffice](https://www.libreoffice.org) | `brew install --cask libreoffice` | faithful DOCX → PDF, spreadsheets (XLSX, ODS, CSV), presentations (PPTX → PDF) |
 | [Pandoc](https://pandoc.org) | `brew install pandoc` | Markdown ↔ DOCX, HTML, ODT, EPUB |
 
-Gibt es den Dateinamen schon, entsteht `Name 2.jpg` – Droplime überschreibt nie etwas.
+If a file name is already taken, you get `Name 2.jpg`. Droplime never overwrites anything.
 
-## Original behalten oder ersetzen
+## Keep or replace the original
 
-<img src="docs/images/wheel-split.png" width="340" align="right" alt="Geteiltes Rad: innen behalten, außen ersetzen">
+<img src="docs/images/wheel-split.png" width="340" align="right" alt="Split wheel: inside keeps, outside replaces">
 
-In den Einstellungen legst du fest, was mit dem Original passiert:
+In Settings you decide what happens to the original:
 
-- **Original behalten** *(Standard)* – die neue Datei kommt dazu.
-- **Original ersetzen** – das Original wandert in den Papierkorb.
-- **Im Rad wählen** – jedes Feld ist zweigeteilt: **innen** behalten, **außen** (rot, mit Papierkorb) ersetzen. Du entscheidest bei jedem Ablegen neu.
+- **Keep original** *(default)*: the new file is added.
+- **Replace original**: the original goes to the Trash.
+- **Choose in the wheel**: every segment is split in two. The **inner** ring (*Keep*) adds the new file, the **outer** amber ring (*Replace*) swaps the original for it. You decide on every drop.
 
-Sicherheitsnetz: Ersetzte Originale landen **immer im Papierkorb** und werden nie endgültig gelöscht. Schlägt eine Konvertierung fehl, bleibt das Original unangetastet – bei mehreren Dateien gilt das für jede einzeln.
+Safety net: replaced originals **always go to the Trash** and are never deleted for good. If a conversion fails, the original stays untouched, and with several files this applies to each one individually.
 
 <br clear="right">
 
-## Werkzeuge
+## Tools
 
-<img src="docs/images/wheel-tools.png" width="340" align="right" alt="Werkzeuge-Rad mit zwei PDFs">
+<img src="docs/images/wheel-tools.png" width="340" align="right" alt="Tools wheel for two PDFs">
 
-Auch das Werkzeug-Rad passt sich an: Zwei PDFs bieten *Zusammenfügen*, ein Foto bietet *Verkleinern* und *Ohne Metadaten*. Werkzeuge erzeugen immer eine **neue** Datei und lassen das Original in Ruhe.
+The tools wheel adapts too: two PDFs offer *Merge*, a photo offers *Resize* and *Strip Metadata*. Tools always create a **new** file and leave the original alone.
 
-| Dateien | Werkzeug | Ergebnis |
+| Files | Tool | Result |
 |---|---|---|
-| Bilder | **Verkleinern** | halbe Kantenlänge, `Foto (klein).jpg` |
-| | **Drehen** | 90° im Uhrzeigersinn |
-| | **Ohne Metadaten** | entfernt Standort (GPS), Kameradaten und XMP – verlustfrei, die Ausrichtung bleibt |
-| PDF | **Teilen** | eine PDF pro Seite |
-| | **Komprimieren** | Bilder im PDF verkleinert |
-| | **Drehen** | alle Seiten um 90° |
-| mehrere PDFs und Bilder | **Zusammenfügen** | ein PDF in der Reihenfolge der Auswahl |
-| Video | **Komprimieren** | HEVC, höchstens 1080p – meist ein Bruchteil der Größe |
-| | **Ohne Ton** | Tonspur entfernt, Bild bleibt unverändert |
-| Audio | **Komprimieren** | AAC mit 96 kbit/s |
-| alles, auch Ordner | **ZIP** | wie „Komprimieren“ im Finder, bei mehreren Objekten `Archiv.zip` |
-| ZIP | **Entpacken** | in einen Ordner daneben |
+| Images | **Resize** | half the width and height, `Photo (small).jpg` |
+| | **Rotate** | 90° clockwise |
+| | **Strip Metadata** | removes location (GPS), camera data and XMP, losslessly; orientation is kept |
+| PDF | **Split** | one PDF per page |
+| | **Compress** | images inside the PDF downsampled |
+| | **Rotate** | all pages by 90° |
+| several PDFs and images | **Merge** | one PDF, in the order of the selection |
+| Video | **Compress** | HEVC, at most 1080p, usually a fraction of the size |
+| | **Remove Audio** | audio track removed, video untouched |
+| Audio | **Compress** | AAC at 96 kbit/s |
+| anything, including folders | **ZIP** | like “Compress” in Finder; several items become `Archive.zip` |
+| ZIP | **Unzip** | into a folder next to it |
 
 <br clear="right">
 
-## Aktionen
+## Actions
 
-<img src="docs/images/wheel-actions.png" width="340" align="right" alt="Aktionen-Rad">
+<img src="docs/images/wheel-actions.png" width="340" align="right" alt="Actions wheel">
 
-Aktionen funktionieren mit allem – Dateien, Ordnern, gemischten Auswahlen:
+Actions work with everything: files, folders, mixed selections.
 
-- **AirDrop** – öffnet direkt die AirDrop-Auswahl.
-- **Kopieren / Verschieben** – fragt nach dem Zielordner (und merkt sich den letzten). Gleichnamige Dateien werden nie überschrieben.
-- **Pfad** – kopiert den vollständigen Pfad in die Zwischenablage, bei mehreren Dateien einen pro Zeile.
-- **Terminal** – öffnet den Ordner der Datei im Terminal.
-- **Float** – parkt die Datei als kleines, immer sichtbares Vorschaufenster am Bildschirmrand. Von dort lässt sie sich jederzeit wieder herausziehen – in eine Mail, in einen Upload, oder mit <kbd>⇧</kbd> zurück ins Droplime-Rad.
-
-<br clear="right">
-
-## Einstellungen
-
-<img src="docs/images/settings.png" width="380" align="right" alt="Einstellungsfenster">
-
-Über das Limetten-Symbol in der Menüleiste → **Einstellungen …** (<kbd>⌘ ,</kbd>):
-
-- **Sprache** – Deutsch oder Englisch. Beim ersten Start folgt Droplime der Systemsprache (Deutsch bei deutschem System, sonst Englisch); umstellen wirkt sofort, ohne Neustart.
-- **Nach dem Konvertieren** – behalten, ersetzen oder im Rad wählen (siehe oben).
-- **Formate im Rad** – Häkchen weg bei Formaten, die du nie brauchst; sie tauchen dann nie mehr im Rad auf. Die kluge Vorauswahl bleibt: Es erscheinen nur Formate, die zur Datei passen *und* angehakt sind.
-- **Zusatzwerkzeuge** – zeigt, ob FFmpeg, LibreOffice und Pandoc gefunden wurden, und wie man sie installiert. Ausgegraute Formate verraten per Tooltip, welches Werkzeug sie freischaltet.
+- **AirDrop**: opens the AirDrop picker right away.
+- **Copy / Move**: asks for the destination folder (and remembers the last one). Files with the same name are never overwritten.
+- **Path**: copies the full path to the clipboard, one per line for several files.
+- **Terminal**: opens the file's folder in Terminal.
+- **Float**: parks the file in a small always-on-top preview window. Drag it out again whenever you need it: into an email, an upload, or back into the Droplime wheel with <kbd>⇧</kbd>.
 
 <br clear="right">
 
-## Datenschutz
+## Settings
 
-- **Alles passiert lokal.** Droplime hat keinen Netzwerkcode – keine Uploads, keine Konten, keine Telemetrie.
-- **Keine Sonderrechte nötig.** Droplime erkennt Ziehen und Tastentipps, ohne Bedienungshilfen- oder Bildschirmaufnahme-Berechtigung.
-- **Nichts geht verloren.** Originale werden nur auf Wunsch ersetzt und landen dann im Papierkorb.
+<img src="docs/images/settings.png" width="380" align="right" alt="Settings window">
+
+Lime icon in the menu bar → **Settings …** (<kbd>⌘ ,</kbd>):
+
+- **Language**: English or German. On first launch Droplime follows the system language (German on a German system, English otherwise); switching takes effect immediately, no restart.
+- **After converting**: keep, replace, or choose in the wheel (see above).
+- **Formats in the wheel**: untick formats you never need and they won't show up again. Smart suggestions stay: only formats that fit the file *and* are ticked appear.
+- **Extra tools**: shows whether FFmpeg, LibreOffice and Pandoc were found and how to install them. Hover over a greyed-out format to see which tool unlocks it.
+
+<br clear="right">
+
+## Privacy
+
+- **Everything happens on your Mac.** Droplime has no networking code: no uploads, no accounts, no telemetry.
+- **No special permissions.** Droplime notices drags and key taps without Accessibility or Screen Recording access.
+- **Nothing gets lost.** Originals are only replaced if you ask for it, and then go to the Trash.
 
 ## Installation
 
-Voraussetzungen: macOS 14 (Sonoma) oder neuer, Xcode bzw. die Swift-Toolchain.
+Requirements: macOS 14 (Sonoma) or later, Xcode or the Swift toolchain.
 
 ```bash
 git clone https://github.com/domi-bg/droplime.git
@@ -147,53 +151,54 @@ cd droplime
 open build/Droplime.app
 ```
 
-`build/Droplime.app` kannst du nach `/Applications` ziehen. Damit Droplime beim Anmelden startet: *Systemeinstellungen → Allgemein → Anmeldeobjekte* → Droplime hinzufügen.
+You can move `build/Droplime.app` to `/Applications`. To start Droplime at login: *System Settings → General → Login Items* → add Droplime.
 
-Für mehr Formate optional:
+For more formats (optional):
 
 ```bash
 brew install ffmpeg pandoc
 brew install --cask libreoffice
 ```
 
-Danach Droplime neu starten.
+Then restart Droplime.
 
-## Entwicklung
+## Development
 
 ```bash
-swift run      # direkt starten, Meldungen erscheinen im Terminal
-swift test     # Tests: echte Beispieldateien durch jedes Format und jedes Werkzeug
+swift run      # run directly, log output goes to the terminal
+swift test     # tests: real sample files through every format and every tool
 ```
 
-| Pfad | Inhalt |
+| Path | Contents |
 |---|---|
-| `Sources/Droplime/DragWatcher.swift` | erkennt systemweit Datei-Drags und Tastentipps |
-| `Sources/Droplime/WheelPanel.swift` | das Rad am Mauszeiger, Ablegen, geteilte Felder |
-| `Sources/Droplime/Conversion/` | ein `Converter` pro Engine (ImageIO, PDFKit, textutil, AVFoundation, FFmpeg, LibreOffice, Pandoc) |
-| `Sources/Droplime/Tools/` | Werkzeuge (`Tool`) für Bilder, PDFs, Medien, Archive |
-| `Sources/Droplime/Actions/` | Aktionen und das Float-Fenster |
-| `Sources/Droplime/LimeIcon.swift` | App- und Menüleisten-Symbol, als Code gezeichnet |
-| `scripts/` | App bauen, Icon und README-Bilder neu erzeugen |
+| `Sources/Droplime/DragWatcher.swift` | detects file drags and key taps system-wide |
+| `Sources/Droplime/WheelPanel.swift` | the wheel at the cursor, dropping, split segments |
+| `Sources/Droplime/Conversion/` | one `Converter` per engine (ImageIO, PDFKit, textutil, AVFoundation, FFmpeg, LibreOffice, Pandoc) |
+| `Sources/Droplime/Tools/` | tools (`Tool`) for images, PDFs, media, archives |
+| `Sources/Droplime/Actions/` | actions and the Float window |
+| `Sources/Droplime/Localization.swift` | every visible string, once per language |
+| `Sources/Droplime/LimeIcon.swift` | app and menu bar icon, drawn in code |
+| `scripts/` | build the app, regenerate the icon and the README images |
 
-**Neues Format:** `Converter` implementieren (`targets(for:)`, `convert(_:to:output:)`) und in `AppDelegate` eintragen – die Reihenfolge der Liste bestimmt, welcher Konverter bei Überschneidungen gewinnt.
-**Neues Werkzeug:** `Tool` implementieren (`applies(to:)`, `run(_:)`) und in `ToolService.standard()` eintragen.
-**Texte und Übersetzungen:** alle sichtbaren Texte stehen in `Sources/Droplime/Localization.swift`, einmal pro Sprache. Fehlt eine Übersetzung, baut die App nicht.
+**New format:** implement `Converter` (`targets(for:)`, `convert(_:to:output:)`) and add it in `AppDelegate`. The order of that list decides which converter wins when several offer the same format.
+**New tool:** implement `Tool` (`applies(to:)`, `run(_:)`) and add it to `ToolService.standard()`.
+**Texts and translations:** all visible strings live in `Sources/Droplime/Localization.swift`, once per language. A missing translation fails the build.
 
-Bilder neu erzeugen: `./scripts/make-icon.sh` (App-Icon) und `./scripts/make-screenshots.sh` (Bilder in dieser README).
+Regenerate images with `./scripts/make-icon.sh` (app icon) and `./scripts/make-screenshots.sh` (the images in this README).
 
-## Grenzen und Pläne
+## Limitations and plans
 
-- Werkzeuge mit Auswahl – Video **kürzen**, Bild **zuschneiden** – brauchen eine kleine Oberfläche und fehlen noch.
-- Die Tasten sind fest (Shift, Cmd, Ctrl) und noch nicht umstellbar.
-- Bei langen Konvertierungen gibt es noch keine Fortschrittsanzeige; ein Ton meldet das Ende.
-- Das Rad zeigt höchstens 10 Einträge; die Reihenfolge ist noch nicht einstellbar.
+- Tools that need a selection, like **trimming** a video or **cropping** an image, need a small UI and aren't there yet.
+- The keys are fixed (Shift, Cmd, Ctrl) and can't be changed yet.
+- Long conversions don't show progress yet; a sound tells you when they're done.
+- The wheel shows at most 10 entries, and their order can't be customized yet.
 
-Ideen und Pull Requests sind willkommen.
+Ideas and pull requests are welcome.
 
-## Danke
+## Thanks
 
-Inspiriert von [Tangerine](https://tangerineformac.com) und [Convierto](https://github.com/nuance-dev/convierto). Droplime ist ein unabhängiges Projekt und enthält keinen Code dieser Apps.
+Inspired by [Tangerine](https://tangerineformac.com) and [Convierto](https://github.com/nuance-dev/convierto). Droplime is an independent project and contains no code from either app.
 
-## Lizenz
+## License
 
 [MIT](LICENSE)

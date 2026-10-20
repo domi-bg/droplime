@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Liest ein Bild mit angewendeter EXIF-Ausrichtung (wie es im Finder angezeigt wird).
+/// Reads an image with its EXIF orientation applied (as Finder displays it).
 private func uprightImage(_ url: URL, maxPixelSize: Int? = nil) throws -> (CGImage, CFString) {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), let type = CGImageSourceGetType(source),
           let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
@@ -34,7 +34,7 @@ private func isRasterImage(_ type: UTType) -> Bool {
     type.conforms(to: .image) && !type.conforms(to: .svg) && !type.conforms(to: .pdf)
 }
 
-/// Halbiert die Kantenlänge.
+/// Halves width and height.
 struct ResizeImageTool: Tool {
     var label: String { L.toolResize }
 
@@ -54,7 +54,7 @@ struct ResizeImageTool: Tool {
     }
 }
 
-/// Dreht um 90° im Uhrzeigersinn.
+/// Rotates by 90° clockwise.
 struct RotateImageTool: Tool {
     var label: String { L.toolRotate }
 
@@ -67,7 +67,7 @@ struct RotateImageTool: Tool {
                                           bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
                                           bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
             else { throw ConversionError(message: L.cannotRotate(url.lastPathComponent)) }
-            // Im Uhrzeigersinn: nach unten verschieben, dann um -90° drehen.
+            // Clockwise: move down, then rotate by -90°.
             context.translateBy(x: 0, y: CGFloat(image.width))
             context.rotate(by: -.pi / 2)
             context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
@@ -81,7 +81,7 @@ struct RotateImageTool: Tool {
     }
 }
 
-/// Entfernt EXIF, GPS und andere Metadaten verlustfrei; nur die Ausrichtung bleibt erhalten.
+/// Removes EXIF, GPS and other metadata losslessly; only the orientation is kept.
 struct StripMetadataTool: Tool {
     var label: String { L.toolStripMetadata }
 
@@ -110,7 +110,7 @@ struct StripMetadataTool: Tool {
                 kCGImageMetadataShouldExcludeXMP: true,
             ]
             var error: Unmanaged<CFError>?
-            // Verlustfrei kopieren; klappt das beim Format nicht, neu schreiben ohne Metadaten.
+            // Copy losslessly; if the format doesn't allow that, re-encode without metadata.
             if !CGImageDestinationCopyImageSource(destination, source, options as CFDictionary, &error) {
                 try? FileManager.default.removeItem(at: output)
                 let (image, _) = try uprightImage(url)

@@ -15,7 +15,7 @@ private func save(_ document: PDFDocument, to url: URL, options: [PDFDocumentWri
     }
 }
 
-/// Fügt mehrere PDFs und Bilder in Reihenfolge zu einem PDF zusammen.
+/// Merges several PDFs and images, in order, into one PDF.
 struct MergePDFTool: Tool {
     var label: String { L.toolMerge }
 
@@ -46,7 +46,7 @@ struct MergePDFTool: Tool {
     }
 }
 
-/// Teilt ein PDF in einzelne Seiten.
+/// Splits a PDF into single pages.
 struct SplitPDFTool: Tool {
     var label: String { L.toolSplit }
 
@@ -72,7 +72,7 @@ struct SplitPDFTool: Tool {
     }
 }
 
-/// Verkleinert eingebettete Bilder (JPEG, Bildschirmauflösung).
+/// Downsamples embedded images (JPEG, screen resolution).
 struct CompressPDFTool: Tool {
     var label: String { L.toolCompress }
 
@@ -87,7 +87,7 @@ struct CompressPDFTool: Tool {
     }
 }
 
-/// Dreht alle Seiten um 90° im Uhrzeigersinn.
+/// Rotates all pages by 90° clockwise.
 struct RotatePDFTool: Tool {
     var label: String { L.toolRotate }
 
