@@ -54,48 +54,48 @@ struct ToolTests {
     @Test func offersMatchingTools() throws {
         let photo = try photo()
         let a = pdf("a.pdf", pages: 2)
-        #expect(labels([photo]) == ["Verkleinern", "Drehen", "Ohne Metadaten", "ZIP"])
-        #expect(labels([a]) == ["Teilen", "Komprimieren", "Drehen", "ZIP"])
-        #expect(labels([a, photo]) == ["Zusammenfügen", "ZIP"])
+        #expect(labels([photo]) == [L.toolResize, L.toolRotate, L.toolStripMetadata, L.toolZip])
+        #expect(labels([a]) == [L.toolSplit, L.toolCompress, L.toolRotate, L.toolZip])
+        #expect(labels([a, photo]) == [L.toolMerge, L.toolZip])
     }
 
     @Test func imageTools() async throws {
         let photo = try photo()
 
-        let small = try await tool("Verkleinern", for: [photo]).run([photo])[0]
+        let small = try await tool(L.toolResize, for: [photo]).run([photo])[0]
         // Ausrichtung angewendet: angezeigt 40×80, halbiert 20×40.
         #expect(properties(small)[kCGImagePropertyPixelWidth] as? Int == 20)
         #expect(properties(small)[kCGImagePropertyPixelHeight] as? Int == 40)
 
-        let rotated = try await tool("Drehen", for: [photo]).run([photo])[0]
+        let rotated = try await tool(L.toolRotate, for: [photo]).run([photo])[0]
         #expect(properties(rotated)[kCGImagePropertyPixelWidth] as? Int == 80)
 
-        let clean = try await tool("Ohne Metadaten", for: [photo]).run([photo])[0]
+        let clean = try await tool(L.toolStripMetadata, for: [photo]).run([photo])[0]
         #expect(properties(photo)[kCGImagePropertyGPSDictionary] != nil)
         #expect(properties(clean)[kCGImagePropertyGPSDictionary] == nil)
         #expect(properties(clean)[kCGImagePropertyOrientation] as? Int == 6)
-        #expect(clean.lastPathComponent == "foto (ohne Metadaten).jpg")
+        #expect(clean.lastPathComponent == "foto\(L.suffixNoMetadata).jpg")
     }
 
     @Test func pdfTools() async throws {
         let a = pdf("a.pdf", pages: 2), b = pdf("b.pdf", pages: 3)
 
-        let merged = try await tool("Zusammenfügen", for: [a, b]).run([a, b])
-        #expect(merged.map(\.lastPathComponent) == ["Zusammengefügt.pdf"])
+        let merged = try await tool(L.toolMerge, for: [a, b]).run([a, b])
+        #expect(merged.map(\.lastPathComponent) == ["\(L.mergedFileName).pdf"])
         #expect(PDFDocument(url: merged[0])?.pageCount == 5)
 
-        let pages = try await tool("Teilen", for: [b]).run([b])
+        let pages = try await tool(L.toolSplit, for: [b]).run([b])
         #expect(pages.count == 3)
         #expect(PDFDocument(url: pages[2])?.pageCount == 1)
 
-        let rotated = try await tool("Drehen", for: [a]).run([a])[0]
+        let rotated = try await tool(L.toolRotate, for: [a]).run([a])[0]
         #expect(PDFDocument(url: rotated)?.page(at: 0)?.rotation == 90)
 
-        let compressed = try await tool("Komprimieren", for: [a]).run([a])[0]
+        let compressed = try await tool(L.toolCompress, for: [a]).run([a])[0]
         #expect(PDFDocument(url: compressed)?.pageCount == 2)
 
         let single = pdf("einzeln.pdf", pages: 1)
-        await #expect(throws: ConversionError.self) { try await tool("Teilen", for: [single]).run([single]) }
+        await #expect(throws: ConversionError.self) { try await tool(L.toolSplit, for: [single]).run([single]) }
     }
 
     @Test func zipRoundTrip() async throws {
@@ -105,11 +105,11 @@ struct ToolTests {
         let note = folder.appendingPathComponent("notiz.txt")
         try Data("notiz".utf8).write(to: note)
 
-        let zip = try await tool("ZIP", for: [sub, note]).run([sub, note])[0]
-        #expect(zip.lastPathComponent == "Archiv.zip")
-        #expect(labels([zip]) == ["Entpacken"])
+        let zip = try await tool(L.toolZip, for: [sub, note]).run([sub, note])[0]
+        #expect(zip.lastPathComponent == "\(L.archiveFileName).zip")
+        #expect(labels([zip]) == [L.toolUnzip])
 
-        let unpacked = try await tool("Entpacken", for: [zip]).run([zip])[0]
+        let unpacked = try await tool(L.toolUnzip, for: [zip]).run([zip])[0]
         #expect(try String(contentsOf: unpacked.appendingPathComponent("Ordner/datei.txt"), encoding: .utf8) == "hallo")
         #expect(FileManager.default.fileExists(atPath: unpacked.appendingPathComponent("notiz.txt").path))
     }
@@ -121,13 +121,13 @@ struct ToolTests {
             "-hide_banner", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=10",
             "-f", "lavfi", "-i", "sine=duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", mov.path,
         ])
-        #expect(labels([mov]) == ["Komprimieren", "Ohne Ton", "ZIP"])
+        #expect(labels([mov]) == [L.toolCompress, L.toolRemoveAudio, L.toolZip])
 
-        let silent = try await tool("Ohne Ton", for: [mov]).run([mov])[0]
+        let silent = try await tool(L.toolRemoveAudio, for: [mov]).run([mov])[0]
         #expect(try await AVURLAsset(url: silent).loadTracks(withMediaType: .audio).isEmpty)
         #expect(try await !AVURLAsset(url: silent).loadTracks(withMediaType: .video).isEmpty)
 
-        let compressed = try await tool("Komprimieren", for: [mov]).run([mov])[0]
+        let compressed = try await tool(L.toolCompress, for: [mov]).run([mov])[0]
         #expect(try await !AVURLAsset(url: compressed).loadTracks(withMediaType: .video).isEmpty)
     }
 }

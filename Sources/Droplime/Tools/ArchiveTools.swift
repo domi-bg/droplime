@@ -5,7 +5,7 @@ private let ditto = URL(fileURLWithPath: "/usr/bin/ditto")
 
 /// Packt Dateien und Ordner in ein ZIP – wie „Komprimieren“ im Finder.
 struct ZipTool: Tool {
-    let label = "ZIP"
+    var label: String { L.toolZip }
 
     func applies(to types: [UTType]) -> Bool { !types.allSatisfy { $0.conforms(to: .zip) } }
 
@@ -22,7 +22,7 @@ struct ZipTool: Tool {
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileAction.copy(urls, to: temp)
-        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: "Archiv.zip"), in: folder)
+        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.archiveFileName + ".zip"), in: folder)
         try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", temp.path, output.path])
         return [output]
     }
@@ -30,7 +30,7 @@ struct ZipTool: Tool {
 
 /// Entpackt ZIP-Dateien in einen Ordner daneben.
 struct UnzipTool: Tool {
-    let label = "Entpacken"
+    var label: String { L.toolUnzip }
 
     func applies(to types: [UTType]) -> Bool { types.allSatisfy { $0.conforms(to: .zip) } }
 

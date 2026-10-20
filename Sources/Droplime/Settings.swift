@@ -7,9 +7,9 @@ enum AfterConversion: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .keep: return "Original behalten"
-        case .replace: return "Original ersetzen (in den Papierkorb)"
-        case .split: return "Im Rad wählen: innen behalten, außen ersetzen"
+        case .keep: return L.afterKeep
+        case .replace: return L.afterReplace
+        case .split: return L.afterSplit
         }
     }
 }
@@ -19,6 +19,10 @@ final class Settings: ObservableObject {
     static let shared = Settings()
 
     private let defaults = UserDefaults.standard
+
+    @Published var language: AppLanguage {
+        didSet { defaults.set(language.rawValue, forKey: "language") }
+    }
 
     @Published var afterConversion: AfterConversion {
         didSet { defaults.set(afterConversion.rawValue, forKey: "afterConversion") }
@@ -30,6 +34,7 @@ final class Settings: ObservableObject {
     }
 
     private init() {
+        language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
         afterConversion = AfterConversion(rawValue: defaults.string(forKey: "afterConversion") ?? "") ?? .keep
         disabledFormats = Set(defaults.stringArray(forKey: "disabledFormats") ?? [])
     }

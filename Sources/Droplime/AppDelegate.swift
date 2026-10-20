@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -10,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var service: ConversionService!
     private var tools: [(name: String, found: Bool, install: String)] = []
     private var settingsWindow: NSWindow?
+    private var languageObserver: AnyCancellable?
     /// Zielformate für die Dateien, die gerade gezogen werden.
     private var currentTargets: [Format] = []
     private let toolService = ToolService.standard()
@@ -32,13 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = LimeIcon.menuBarImage()
-        let menu = NSMenu()
-        let settingsItem = NSMenuItem(title: "Einstellungen …", action: #selector(showSettings), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-        menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Droplime beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        statusItem.menu = menu
+        buildMenu()
+        // Sprache sofort umschalten: Menü und Fenstertitel neu setzen (SwiftUI aktualisiert sich selbst).
+        languageObserver = settings.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
+            self?.buildMenu()
+            self?.settingsWindow?.title = L.settingsWindowTitle
+        }
 
         watcher.onModifierTap = { [weak self] mode in
             self?.showWheel(mode)
@@ -52,11 +53,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.start()
     }
 
+    private func buildMenu() {
+        let menu = NSMenu()
+        let settingsItem = NSMenuItem(title: L.menuSettings, action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: L.menuQuit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        statusItem.menu = menu
+    }
+
     @objc private func showSettings() {
         if settingsWindow == nil {
             let view = SettingsView(settings: settings, available: service.producibleFormats, tools: tools)
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-            window.title = "Droplime Einstellungen"
+            window.title = L.settingsWindowTitle
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
@@ -97,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         NSSound(named: "Glass")?.play()
                     }
                 } catch {
-                    self?.showError("Aktion fehlgeschlagen", error.localizedDescription)
+                    self?.showError(L.actionFailed, error.localizedDescription)
                 }
             }
         case .tools:
@@ -108,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     print("✓ \(tool.label): \(outputs.map(\.lastPathComponent).joined(separator: ", "))")
                     NSSound(named: "Glass")?.play()
                 } catch {
-                    showError("\(tool.label) fehlgeschlagen", error.localizedDescription)
+                    showError(L.toolFailed(tool.label), error.localizedDescription)
                 }
             }
         }
@@ -126,7 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 print("✓ \(urls.count) Datei(en) → \(format.label)\(replace ? " (Original im Papierkorb)" : "")")
                 NSSound(named: "Glass")?.play()
             } else {
-                showError("Konvertierung fehlgeschlagen", errors.map(\.localizedDescription).joined(separator: "\n\n"))
+                showError(L.conversionFailed, errors.map(\.localizedDescription).joined(separator: "\n\n"))
             }
         }
     }

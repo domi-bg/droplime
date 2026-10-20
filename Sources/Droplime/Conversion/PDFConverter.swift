@@ -10,11 +10,11 @@ struct PDFConverter: Converter {
 
     func convert(_ input: URL, to format: Format, output: URL) async throws {
         guard let document = PDFDocument(url: input) else {
-            throw ConversionError(message: "\(input.lastPathComponent) konnte nicht geöffnet werden.")
+            throw ConversionError(message: L.cannotOpen(input.lastPathComponent))
         }
         if format == .txt {
             guard let text = document.string, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw ConversionError(message: "\(input.lastPathComponent) enthält keinen Text (vielleicht ein Scan?).")
+                throw ConversionError(message: L.noText(input.lastPathComponent))
             }
             try text.write(to: output, atomically: true, encoding: .utf8)
             return
@@ -23,7 +23,7 @@ struct PDFConverter: Converter {
             guard let page = document.page(at: index) else { continue }
             let url = document.pageCount == 1
                 ? output
-                : ConversionService.outputURL(for: input, ext: format.ext, suffix: " – Seite \(index + 1)")
+                : ConversionService.outputURL(for: input, ext: format.ext, suffix: L.pageSuffix(index + 1))
             try Self.render(page, as: format, to: url)
         }
     }
@@ -36,15 +36,15 @@ struct PDFConverter: Converter {
         guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                                       space: CGColorSpace(name: CGColorSpace.sRGB)!,
                                       bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
-        else { throw ConversionError(message: "Seite konnte nicht gerendert werden.") }
+        else { throw ConversionError(message: L.pageFailed) }
         context.setFillColor(.white)
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
         context.scaleBy(x: scale, y: scale)
         page.draw(with: .mediaBox, to: context)
         guard let image = context.makeImage(), let type = format.type,
               let destination = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil)
-        else { throw ConversionError(message: "Seite konnte nicht gespeichert werden.") }
+        else { throw ConversionError(message: L.pageFailed) }
         CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
-        guard CGImageDestinationFinalize(destination) else { throw ConversionError(message: "Seite konnte nicht gespeichert werden.") }
+        guard CGImageDestinationFinalize(destination) else { throw ConversionError(message: L.pageFailed) }
     }
 }

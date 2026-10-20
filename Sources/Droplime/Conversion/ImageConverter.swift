@@ -18,20 +18,20 @@ struct ImageConverter: Converter {
         let image = try Self.loadImage(input)
         if format == .pdf {
             guard let page = PDFPage(image: NSImage(cgImage: image, size: .zero)) else {
-                throw ConversionError(message: "PDF-Seite konnte nicht erstellt werden.")
+                throw ConversionError(message: L.pdfFailed)
             }
             let document = PDFDocument()
             document.insert(page, at: 0)
-            guard document.write(to: output) else { throw ConversionError(message: "PDF konnte nicht geschrieben werden.") }
+            guard document.write(to: output) else { throw ConversionError(message: L.pdfFailed) }
             return
         }
         guard let type = format.type,
               let destination = CGImageDestinationCreateWithURL(output as CFURL, type.identifier as CFString, 1, nil)
-        else { throw ConversionError(message: "\(format.label) wird nicht unterstützt.") }
+        else { throw ConversionError(message: L.notSupported(format.label)) }
         let options = [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary
         CGImageDestinationAddImage(destination, image, options)
         guard CGImageDestinationFinalize(destination) else {
-            throw ConversionError(message: "\(format.label) konnte nicht geschrieben werden.")
+            throw ConversionError(message: L.cannotWrite(format.label))
         }
     }
 
@@ -44,6 +44,6 @@ struct ImageConverter: Converter {
         if let image = NSImage(contentsOf: url)?.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             return image
         }
-        throw ConversionError(message: "\(url.lastPathComponent) konnte nicht gelesen werden.")
+        throw ConversionError(message: L.cannotRead(url.lastPathComponent))
     }
 }

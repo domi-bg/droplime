@@ -123,6 +123,7 @@ Aktionen funktionieren mit allem – Dateien, Ordnern, gemischten Auswahlen:
 
 Über das Limetten-Symbol in der Menüleiste → **Einstellungen …** (<kbd>⌘ ,</kbd>):
 
+- **Sprache** – Deutsch oder Englisch. Beim ersten Start folgt Droplime der Systemsprache (Deutsch bei deutschem System, sonst Englisch); umstellen wirkt sofort, ohne Neustart.
 - **Nach dem Konvertieren** – behalten, ersetzen oder im Rad wählen (siehe oben).
 - **Formate im Rad** – Häkchen weg bei Formaten, die du nie brauchst; sie tauchen dann nie mehr im Rad auf. Die kluge Vorauswahl bleibt: Es erscheinen nur Formate, die zur Datei passen *und* angehakt sind.
 - **Zusatzwerkzeuge** – zeigt, ob FFmpeg, LibreOffice und Pandoc gefunden wurden, und wie man sie installiert. Ausgegraute Formate verraten per Tooltip, welches Werkzeug sie freischaltet.
@@ -176,6 +177,7 @@ swift test     # Tests: echte Beispieldateien durch jedes Format und jedes Werkz
 
 **Neues Format:** `Converter` implementieren (`targets(for:)`, `convert(_:to:output:)`) und in `AppDelegate` eintragen – die Reihenfolge der Liste bestimmt, welcher Konverter bei Überschneidungen gewinnt.
 **Neues Werkzeug:** `Tool` implementieren (`applies(to:)`, `run(_:)`) und in `ToolService.standard()` eintragen.
+**Texte und Übersetzungen:** alle sichtbaren Texte stehen in `Sources/Droplime/Localization.swift`, einmal pro Sprache. Fehlt eine Übersetzung, baut die App nicht.
 
 Bilder neu erzeugen: `./scripts/make-icon.sh` (App-Icon) und `./scripts/make-screenshots.sh` (Bilder in dieser README).
 

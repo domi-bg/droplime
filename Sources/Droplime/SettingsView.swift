@@ -16,8 +16,15 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Nach dem Konvertieren") {
-                Picker("Nach dem Konvertieren", selection: $settings.afterConversion) {
+            Section(L.settingsLanguage) {
+                Picker(L.settingsLanguage, selection: $settings.language) {
+                    ForEach(AppLanguage.allCases) { Text($0.label).tag($0) }
+                }
+                .labelsHidden()
+            }
+
+            Section(L.settingsAfterConversion) {
+                Picker(L.settingsAfterConversion, selection: $settings.afterConversion) {
                     ForEach(AfterConversion.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.radioGroup)
@@ -35,26 +42,26 @@ struct SettingsView: View {
                     .padding(.vertical, 2)
                 }
             } header: {
-                Text("Formate im Rad")
+                Text(L.settingsFormats)
             } footer: {
-                Text("Droplime schlägt nur Formate vor, die zu den gezogenen Dateien passen. Hier blendest du Formate aus, die du nie brauchst. Ausgegraute Formate brauchen ein Zusatzwerkzeug (siehe unten); der Tooltip verrät, welches.")
+                Text(L.settingsFormatsFooter)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Zusatzwerkzeuge") {
+            Section(L.settingsTools) {
                 ForEach(tools, id: \.name) { tool in
                     HStack {
                         Text(tool.name)
                         Spacer()
                         if tool.found {
-                            Label("gefunden", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                            Label(L.toolFound, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                         } else {
                             Text(tool.install).font(.system(.body, design: .monospaced)).textSelection(.enabled)
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
-                Text("Nach der Installation Droplime neu starten.").font(.caption).foregroundStyle(.secondary)
+                Text(L.restartAfterInstall).font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -71,6 +78,6 @@ struct SettingsView: View {
         }
         .toggleStyle(.checkbox)
         .disabled(!isAvailable)
-        .help(isAvailable ? "" : Self.requiredTool[format.ext].map { "Braucht \($0)" } ?? "Auf diesem Mac nicht verfügbar")
+        .help(isAvailable ? "" : Self.requiredTool[format.ext].map(L.needsTool) ?? L.notAvailableHere)
     }
 }

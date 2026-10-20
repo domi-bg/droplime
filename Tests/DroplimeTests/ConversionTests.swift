@@ -95,7 +95,7 @@ struct ConversionTests {
         let errors = await service.convert([url], to: .png).errors
         #expect(errors.isEmpty)
         let pages = try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasSuffix(".png") }
-        #expect(pages.sorted() == ["dokument – Seite 1.png", "dokument – Seite 2.png"])
+        #expect(pages.sorted() == ["dokument\(L.pageSuffix(1)).png", "dokument\(L.pageSuffix(2)).png"])
         pages.forEach { try? FileManager.default.removeItem(at: folder.appendingPathComponent($0)) }
 
         try await convertToAllTargets(url, expecting: [.png, .jpg, .txt])

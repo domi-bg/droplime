@@ -22,7 +22,7 @@ final class FloatPanel: NSPanel, NSWindowDelegate {
         super.init(contentRect: NSRect(x: 0, y: 0, width: 168, height: 176),
                    styleMask: [.titled, .closable, .utilityWindow, .hudWindow, .nonactivatingPanel],
                    backing: .buffered, defer: false)
-        title = urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) Objekte"
+        title = urls.count == 1 ? urls[0].lastPathComponent : L.floatItems(urls.count)
         level = .floating
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
@@ -45,7 +45,7 @@ private final class FloatView: NSView, NSDraggingSource {
         self.urls = urls
         thumbnail = NSWorkspace.shared.icon(forFile: urls[0].path)
         super.init(frame: .zero)
-        toolTip = "Zum Verwenden herausziehen"
+        toolTip = L.floatTooltip
         let request = QLThumbnailGenerator.Request(fileAt: urls[0], size: CGSize(width: 136, height: 136),
                                                    scale: NSScreen.main?.backingScaleFactor ?? 2,
                                                    representationTypes: .thumbnail)
@@ -74,7 +74,7 @@ private final class FloatView: NSView, NSDraggingSource {
         thumbnail.draw(in: NSRect(x: box.midX - drawn.width / 2, y: box.midY - drawn.height / 2,
                                   width: drawn.width, height: drawn.height))
         if urls.count > 1 {
-            let label = NSAttributedString(string: "+\(urls.count - 1) weitere", attributes: [
+            let label = NSAttributedString(string: L.floatMore(urls.count - 1), attributes: [
                 .font: NSFont.systemFont(ofSize: 11, weight: .medium), .foregroundColor: NSColor.secondaryLabelColor,
             ])
             label.draw(at: NSPoint(x: bounds.midX - label.size().width / 2, y: 4))

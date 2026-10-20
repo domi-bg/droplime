@@ -31,13 +31,13 @@ struct MediaConverter: Converter {
         default: .m4a
         }
         guard let session = AVAssetExportSession(asset: AVURLAsset(url: input), presetName: preset) else {
-            throw ConversionError(message: "Export für \(input.lastPathComponent) nicht möglich.")
+            throw ConversionError(message: L.exportFailed)
         }
         session.outputURL = output
         session.outputFileType = fileType
         await session.export()
         if session.status != .completed {
-            throw ConversionError(message: session.error?.localizedDescription ?? "Export fehlgeschlagen.")
+            throw ConversionError(message: session.error?.localizedDescription ?? L.exportFailed)
         }
     }
 }

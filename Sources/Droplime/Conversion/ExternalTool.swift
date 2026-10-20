@@ -38,7 +38,7 @@ enum ExternalTool {
         guard status == 0 else {
             let tail = ((try? String(contentsOf: errURL, encoding: .utf8)) ?? "")
                 .split(separator: "\n").suffix(3).joined(separator: "\n")
-            throw ConversionError(message: "\(executable.lastPathComponent) ist fehlgeschlagen:\n\(tail)")
+            throw ConversionError(message: L.externalToolFailed(executable.lastPathComponent, tail))
         }
         return (try? String(contentsOf: outURL, encoding: .utf8)) ?? ""
     }

@@ -76,6 +76,7 @@ func wheelScene(_ name: String, mode: WheelMode, items: [String], split: Bool = 
 
 MainActor.assumeIsolated {
     _ = NSApplication.shared
+    Settings.shared.language = .german  // die README ist auf Deutsch
     wheelScene("wheel-convert.png", mode: .convert, items: ["JPG", "HEIC", "TIFF", "GIF", "BMP", "PDF"],
                highlight: 0, key: "⇧ Shift", file: "png")
     wheelScene("wheel-split.png", mode: .convert, items: ["PDF", "RTF", "HTML", "TXT", "ODT"], split: true,

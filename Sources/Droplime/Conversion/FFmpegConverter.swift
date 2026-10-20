@@ -44,7 +44,7 @@ struct FFmpegConverter: Converter {
     }
 
     func convert(_ input: URL, to format: Format, output: URL) async throws {
-        guard let args = options[format] else { throw ConversionError(message: "\(format.label) wird nicht unterstützt.") }
+        guard let args = options[format] else { throw ConversionError(message: L.notSupported(format.label)) }
         try await ExternalTool.run(executable, ["-hide_banner", "-nostdin", "-i", input.path] + args + [output.path])
     }
 

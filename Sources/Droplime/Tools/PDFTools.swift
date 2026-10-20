@@ -4,20 +4,20 @@ import UniformTypeIdentifiers
 
 private func open(_ url: URL) throws -> PDFDocument {
     guard let document = PDFDocument(url: url) else {
-        throw ConversionError(message: "\(url.lastPathComponent) konnte nicht geöffnet werden.")
+        throw ConversionError(message: L.cannotOpen(url.lastPathComponent))
     }
     return document
 }
 
 private func save(_ document: PDFDocument, to url: URL, options: [PDFDocumentWriteOption: Any] = [:]) throws {
     guard document.write(to: url, withOptions: options) else {
-        throw ConversionError(message: "\(url.lastPathComponent) konnte nicht geschrieben werden.")
+        throw ConversionError(message: L.cannotWrite(url.lastPathComponent))
     }
 }
 
 /// Fügt mehrere PDFs und Bilder in Reihenfolge zu einem PDF zusammen.
 struct MergePDFTool: Tool {
-    let label = "Zusammenfügen"
+    var label: String { L.toolMerge }
 
     func applies(to types: [UTType]) -> Bool {
         types.count >= 2 && types.contains { $0.conforms(to: .pdf) || $0.conforms(to: .image) }
@@ -34,12 +34,12 @@ struct MergePDFTool: Tool {
                 }
             } else {
                 guard let image = NSImage(contentsOf: url), let page = PDFPage(image: image) else {
-                    throw ConversionError(message: "\(url.lastPathComponent) konnte nicht gelesen werden.")
+                    throw ConversionError(message: L.cannotRead(url.lastPathComponent))
                 }
                 merged.insert(page, at: merged.pageCount)
             }
         }
-        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: "Zusammengefügt.pdf"),
+        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.mergedFileName + ".pdf"),
                                                   in: urls[0].deletingLastPathComponent())
         try save(merged, to: output)
         return [output]
@@ -48,7 +48,7 @@ struct MergePDFTool: Tool {
 
 /// Teilt ein PDF in einzelne Seiten.
 struct SplitPDFTool: Tool {
-    let label = "Teilen"
+    var label: String { L.toolSplit }
 
     func applies(to types: [UTType]) -> Bool { types.allSatisfy { $0.conforms(to: .pdf) } }
 
@@ -57,13 +57,13 @@ struct SplitPDFTool: Tool {
         for url in urls {
             let document = try open(url)
             guard document.pageCount > 1 else {
-                throw ConversionError(message: "\(url.lastPathComponent) hat nur eine Seite.")
+                throw ConversionError(message: L.onlyOnePage(url.lastPathComponent))
             }
             for i in 0..<document.pageCount {
                 guard let page = document.page(at: i)?.copy() as? PDFPage else { continue }
                 let single = PDFDocument()
                 single.insert(page, at: 0)
-                let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: " – Seite \(i + 1)")
+                let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: L.pageSuffix(i + 1))
                 try save(single, to: output)
                 outputs.append(output)
             }
@@ -74,13 +74,13 @@ struct SplitPDFTool: Tool {
 
 /// Verkleinert eingebettete Bilder (JPEG, Bildschirmauflösung).
 struct CompressPDFTool: Tool {
-    let label = "Komprimieren"
+    var label: String { L.toolCompress }
 
     func applies(to types: [UTType]) -> Bool { types.allSatisfy { $0.conforms(to: .pdf) } }
 
     func run(_ urls: [URL]) async throws -> [URL] {
         try await eachFile(urls) { url in
-            let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: " (komprimiert)")
+            let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: L.suffixCompressed)
             try save(try open(url), to: output, options: [.saveImagesAsJPEGOption: true, .optimizeImagesForScreenOption: true])
             return output
         }
@@ -89,7 +89,7 @@ struct CompressPDFTool: Tool {
 
 /// Dreht alle Seiten um 90° im Uhrzeigersinn.
 struct RotatePDFTool: Tool {
-    let label = "Drehen"
+    var label: String { L.toolRotate }
 
     func applies(to types: [UTType]) -> Bool { types.allSatisfy { $0.conforms(to: .pdf) } }
 
@@ -99,7 +99,7 @@ struct RotatePDFTool: Tool {
             for i in 0..<document.pageCount {
                 if let page = document.page(at: i) { page.rotation = (page.rotation + 90) % 360 }
             }
-            let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: " (gedreht)")
+            let output = ConversionService.outputURL(for: url, ext: "pdf", suffix: L.suffixRotated)
             try save(document, to: output)
             return output
         }

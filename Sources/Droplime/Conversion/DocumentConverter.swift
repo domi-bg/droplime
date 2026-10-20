@@ -24,7 +24,7 @@ struct DocumentConverter: Converter {
             return
         }
         guard let name = Self.textutilFormats.first(where: { $0.0 == format })?.1 else {
-            throw ConversionError(message: "\(format.label) wird nicht unterstützt.")
+            throw ConversionError(message: L.notSupported(format.label))
         }
         try await ExternalTool.run(URL(fileURLWithPath: "/usr/bin/textutil"),
                                    ["-convert", name, "-output", output.path, input.path])
@@ -55,6 +55,6 @@ struct DocumentConverter: Converter {
         let operation = NSPrintOperation(view: textView, printInfo: info)
         operation.showsPrintPanel = false
         operation.showsProgressPanel = false
-        guard operation.run() else { throw ConversionError(message: "PDF konnte nicht erstellt werden.") }
+        guard operation.run() else { throw ConversionError(message: L.pdfFailed) }
     }
 }

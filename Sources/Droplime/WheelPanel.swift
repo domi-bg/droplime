@@ -75,7 +75,7 @@ final class WheelView: NSView {
         self.items = items
         self.split = split && !items.isEmpty
         highlighted = nil
-        centerText = items.isEmpty ? "Nichts möglich" : mode.title
+        centerText = items.isEmpty ? L.nothingPossible : mode.title
         needsDisplay = true
     }
 

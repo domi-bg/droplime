@@ -13,9 +13,9 @@ enum WheelMode {
 
     var title: String {
         switch self {
-        case .convert: return "Konvertieren"
-        case .tools: return "Werkzeuge"
-        case .actions: return "Aktionen"
+        case .convert: return L.modeConvert
+        case .tools: return L.modeTools
+        case .actions: return L.modeActions
         }
     }
 

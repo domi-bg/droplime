@@ -40,13 +40,15 @@ struct Format: Hashable {
     static let opus = Format(label: "Opus", ext: "opus")
 
     /// Alle Zielformate, gruppiert für die Einstellungen.
-    static let groups: [(title: String, formats: [Format])] = [
-        ("Bilder", [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]),
-        ("Dokumente", [.pdf, .docx, .odt, .rtf, .html, .txt, .md, .epub]),
-        ("Tabellen & Präsentationen", [.xlsx, .ods, .csv, .pptx]),
-        ("Video", [.mp4, .mov, .mkv, .webm]),
-        ("Audio", [.mp3, .m4a, .wav, .aiff, .flac, .ogg, .opus]),
-    ]
+    static var groups: [(title: String, formats: [Format])] {
+        [
+            (L.groupImages, [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]),
+            (L.groupDocuments, [.pdf, .docx, .odt, .rtf, .html, .txt, .md, .epub]),
+            (L.groupSheets, [.xlsx, .ods, .csv, .pptx]),
+            (L.groupVideo, [.mp4, .mov, .mkv, .webm]),
+            (L.groupAudio, [.mp3, .m4a, .wav, .aiff, .flac, .ogg, .opus]),
+        ]
+    }
 }
 
 protocol Converter {
@@ -113,7 +115,7 @@ final class ConversionService {
             do {
                 guard let type = Self.type(of: url),
                       let converter = converters.first(where: { $0.targets(for: type).contains(format) })
-                else { throw ConversionError(message: "\(url.lastPathComponent) kann nicht in \(format.label) umgewandelt werden.") }
+                else { throw ConversionError(message: L.cannotConvert(url.lastPathComponent, format.label)) }
                 try await converter.convert(url, to: format, output: Self.outputURL(for: url, ext: format.ext))
                 succeeded.append(url)
                 if replaceOriginals { try trash(url) }

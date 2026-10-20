@@ -6,12 +6,12 @@ enum FileAction: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .airDrop: return "AirDrop"
-        case .copy: return "Kopieren"
-        case .move: return "Verschieben"
-        case .copyPath: return "Pfad"
-        case .terminal: return "Terminal"
-        case .float: return "Float"
+        case .airDrop: return L.actionAirDrop
+        case .copy: return L.actionCopy
+        case .move: return L.actionMove
+        case .copyPath: return L.actionPath
+        case .terminal: return L.actionTerminal
+        case .float: return L.actionFloat
         }
     }
 
@@ -21,19 +21,19 @@ enum FileAction: String, CaseIterable {
         switch self {
         case .airDrop:
             guard let service = NSSharingService(named: .sendViaAirDrop), service.canPerform(withItems: urls) else {
-                throw ConversionError(message: "AirDrop ist auf diesem Mac nicht verfügbar.")
+                throw ConversionError(message: L.airDropUnavailable)
             }
             NSApp.activate()
             service.perform(withItems: urls)
         case .copy, .move:
-            guard let folder = Self.chooseFolder(title: self == .copy ? "Kopieren nach" : "Verschieben nach") else { return false }
+            guard let folder = Self.chooseFolder(title: self == .copy ? L.copyTo : L.moveTo) else { return false }
             if self == .copy { try Self.copy(urls, to: folder) } else { try Self.move(urls, to: folder) }
         case .copyPath:
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(Self.pathText(urls), forType: .string)
         case .terminal:
             guard let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Terminal") else {
-                throw ConversionError(message: "Terminal wurde nicht gefunden.")
+                throw ConversionError(message: L.terminalNotFound)
             }
             NSWorkspace.shared.open(Self.folders(of: urls), withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
         case .float:
@@ -98,7 +98,7 @@ enum FileAction: String, CaseIterable {
     private static func chooseFolder(title: String) -> URL? {
         let panel = NSOpenPanel()
         panel.title = title
-        panel.prompt = title.components(separatedBy: " ").first
+        panel.prompt = L.choose
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
