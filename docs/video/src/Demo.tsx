@@ -4,7 +4,7 @@ import {LimeMark} from './components/LimeMark';
 import {Captions, CmdClick, Cursor, FloatWindow, Ghosts, KeyCap, MetaCard, PageFan, Trash} from './components/Overlays';
 import {Wheel} from './components/Wheel';
 import {C, DURATION, FONT, FPS, easeIn, easeOut, prog, springy, windowed} from './theme';
-import {CLICKS, ROWS, WHEELS, cursorAt} from './timeline';
+import {CLICKS, ROWS, SCREEN, WHEELS, cursorAt} from './timeline';
 
 const Background: React.FC = () => (
   <AbsoluteFill style={{background: `linear-gradient(170deg, ${C.bgTop} 0%, ${C.bgBottom} 75%)`}}>
@@ -88,18 +88,21 @@ export const Demo: React.FC<{sound: boolean}> = ({sound}) => {
     <AbsoluteFill style={{fontFamily: FONT}}>
       <Background />
       <Intro t={t} />
-      <Finder t={t} />
+      {/* The Mac screen: laid out in logical pixels, scaled to fill the frame. */}
+      <AbsoluteFill style={{transform: `translate(${SCREEN.x}px, ${SCREEN.y}px) scale(${SCREEN.scale})`, transformOrigin: '0 0'}}>
+        <Finder t={t} />
+        <FloatWindow t={t} />
+        {WHEELS.map((w) => <Wheel key={w.tap} w={w} t={t} cursor={cursor} />)}
+        <PageFan t={t} />
+        <MetaCard t={t} />
+        <AbsoluteFill style={{opacity: stage}}>
+          <Ghosts t={t} />
+          <Cursor t={t} />
+          <CmdClick t={t} />
+        </AbsoluteFill>
+      </AbsoluteFill>
       <Trash t={t} />
       <Captions t={t} />
-      <FloatWindow t={t} />
-      {WHEELS.map((w) => <Wheel key={w.tap} w={w} t={t} cursor={cursor} />)}
-      <PageFan t={t} />
-      <MetaCard t={t} />
-      <AbsoluteFill style={{opacity: stage}}>
-        <Ghosts t={t} />
-        <Cursor t={t} />
-        <CmdClick t={t} />
-      </AbsoluteFill>
       <KeyCap t={t} />
       <Outro t={t} />
       {sound && <Sound />}

@@ -8,6 +8,7 @@ export interface Row {
   kind: FileKind;
   size: string;
   type: string;
+  date: string;
   /** When the row slides into the list (new files). */
   appearAt?: number;
   /** When the row leaves the list (moved to Trash). */
@@ -23,61 +24,32 @@ export const T = {
   outroIcon: 44.5,
 };
 
-// ---- Wheels -----------------------------------------------------------------------------------
+// ---- Screen ------------------------------------------------------------------------------------
 
-export interface Wheel {
-  title: string;
-  items: string[];
-  split: boolean;
-  key: string;
-  /** Wheel center = cursor position when the key is tapped. */
-  x: number;
-  y: number;
-  /** Key tap; the wheel opens right after it. */
-  tap: number;
-  /** Drop on a segment. */
-  drop: number;
-  /** The picked item (for the ✓ in the middle). */
-  picked: string;
-}
-
-const WX = 1390;
-const WY = 560;
-
-export const WHEELS: Wheel[] = [
-  {title: 'Convert', items: ['JPG', 'PNG', 'TIFF', 'GIF', 'BMP', 'PDF'], split: false, key: '⇧ Shift',
-    x: WX, y: WY, tap: 8.6, drop: 11.4, picked: 'JPG'},
-  {title: 'Convert', items: ['PDF', 'RTF', 'HTML', 'TXT', 'ODT'], split: true, key: '⇧ Shift',
-    x: WX, y: WY + 20, tap: 16.4, drop: 21.4, picked: 'PDF'},
-  {title: 'Tools', items: ['Merge', 'ZIP'], split: false, key: '⌘ Cmd',
-    x: WX, y: WY, tap: 26.6, drop: 28.8, picked: 'Merge'},
-  {title: 'Tools', items: ['Resize', 'Rotate', 'Strip Metadata', 'ZIP'], split: false, key: '⌘ Cmd',
-    x: WX, y: WY, tap: 33.5, drop: 35.3, picked: 'Strip Metadata'},
-  {title: 'Actions', items: ['AirDrop', 'Copy', 'Move', 'Path', 'Terminal', 'Float'], split: false, key: '⌃ Ctrl',
-    x: WX, y: WY, tap: 39.4, drop: 41.0, picked: 'Float'},
-];
-
-export const WHEEL_OPEN_DELAY = 0.08;
-/** The app hides the wheel 0.4 s after a drop. */
-export const WHEEL_HIDE_DELAY = 0.4;
+/**
+ * Everything "on the Mac" (Finder, wheel, cursor, …) is laid out in logical pixels and then
+ * scaled onto the video frame by this transform; captions and the keycap sit on top, unscaled.
+ */
+export const SCREEN = {x: 130, y: 178, scale: 1.19};
+export const toScreen = (p: {x: number; y: number}) => ({x: SCREEN.x + p.x * SCREEN.scale, y: SCREEN.y + p.y * SCREEN.scale});
 
 // ---- Finder ------------------------------------------------------------------------------------
 
 export const ROWS: Row[] = [
-  {name: 'Interview.wav', kind: 'wav', size: '31.7 MB', type: 'Waveform audio'},
-  {name: 'Invoice April.pdf', kind: 'pdf', size: '98 KB', type: 'PDF document'},
-  {name: 'Invoice March.pdf', kind: 'pdf', size: '112 KB', type: 'PDF document'},
-  {name: 'Logo.png', kind: 'png', size: '64 KB', type: 'PNG image'},
-  {name: 'Merged.pdf', kind: 'pdf', size: '210 KB', type: 'PDF document', appearAt: 30.75},
-  {name: 'Report.docx', kind: 'docx', size: '86 KB', type: 'Word document', removeAt: 22.0},
-  {name: 'Report.pdf', kind: 'pdf', size: '142 KB', type: 'PDF document', appearAt: 21.8},
-  {name: 'Screen Recording.mov', kind: 'mov', size: '48.3 MB', type: 'QuickTime movie'},
-  {name: 'Vacation (no metadata).jpg', kind: 'jpg', size: '3.0 MB', type: 'JPEG image', appearAt: 35.8},
-  {name: 'Vacation.heic', kind: 'heic', size: '2.4 MB', type: 'HEIF image'},
-  {name: 'Vacation.jpg', kind: 'jpg', size: '3.1 MB', type: 'JPEG image', appearAt: 11.9},
+  {name: 'Interview.wav', kind: 'wav', size: '31.7 MB', type: 'Waveform audio', date: 'Oct 2, 2026'},
+  {name: 'Invoice April.pdf', kind: 'pdf', size: '98 KB', type: 'PDF document', date: 'Oct 9, 2026'},
+  {name: 'Invoice March.pdf', kind: 'pdf', size: '112 KB', type: 'PDF document', date: 'Oct 9, 2026'},
+  {name: 'Logo.png', kind: 'png', size: '64 KB', type: 'PNG image', date: 'Sep 28, 2026'},
+  {name: 'Merged.pdf', kind: 'pdf', size: '210 KB', type: 'PDF document', date: 'Today, 14:33', appearAt: 30.75},
+  {name: 'Report.docx', kind: 'docx', size: '86 KB', type: 'Word document', date: 'Oct 15, 2026', removeAt: 22.0},
+  {name: 'Report.pdf', kind: 'pdf', size: '142 KB', type: 'PDF document', date: 'Today, 14:32', appearAt: 21.8},
+  {name: 'Screen Recording.mov', kind: 'mov', size: '48.3 MB', type: 'QuickTime movie', date: 'Oct 17, 2026'},
+  {name: 'Vacation (no metadata).jpg', kind: 'jpg', size: '3.0 MB', type: 'JPEG image', date: 'Today, 14:33', appearAt: 35.8},
+  {name: 'Vacation.heic', kind: 'heic', size: '2.4 MB', type: 'HEIF image', date: 'Aug 12, 2026'},
+  {name: 'Vacation.jpg', kind: 'jpg', size: '3.1 MB', type: 'JPEG image', date: 'Today, 14:31', appearAt: 11.9},
 ];
 
-export const FINDER = {x: 130, y: 230, w: 960, rowH: 52, titleH: 64, headerH: 40, sidebar: 210};
+export const FINDER = {x: 0, y: 0, w: 1395, rowH: 52, titleH: 64, headerH: 40, sidebar: 210};
 export const FINDER_H = FINDER.titleH + FINDER.headerH + FINDER.rowH * 10 + 16;
 
 const ROW_IN = 0.55;
@@ -107,15 +79,56 @@ export const rowTop = (name: string, t: number) =>
 /** Point on a row's icon/name, where the cursor grabs it. */
 export const rowGrab = (name: string, t: number) => ({x: FINDER.x + FINDER.sidebar + 80, y: rowTop(name, t) + FINDER.rowH / 2 + 4});
 
+// ---- Wheels -----------------------------------------------------------------------------------
+
+export interface Wheel {
+  title: string;
+  items: string[];
+  split: boolean;
+  key: string;
+  /** Wheel center = cursor position when the key is tapped: right next to the grabbed file. */
+  x: number;
+  y: number;
+  /** Key tap; the wheel opens right after it. */
+  tap: number;
+  /** Drop on a segment. */
+  drop: number;
+  /** The picked item (for the ✓ in the middle). */
+  picked: string;
+}
+
+/** The file is only nudged a little before the key is tapped. */
+const nudged = (name: string, t: number, dx: number, dy: number) => {
+  const p = rowGrab(name, t);
+  return {x: p.x + dx, y: p.y + dy};
+};
+
+export const WHEELS: Wheel[] = [
+  {title: 'Convert', items: ['JPG', 'PNG', 'TIFF', 'GIF', 'BMP', 'PDF'], split: false, key: '⇧ Shift',
+    ...nudged('Vacation.heic', 8.6, 70, -10), tap: 8.6, drop: 11.4, picked: 'JPG'},
+  {title: 'Convert', items: ['PDF', 'RTF', 'HTML', 'TXT', 'ODT'], split: true, key: '⇧ Shift',
+    ...nudged('Report.docx', 16.4, 70, 10), tap: 16.4, drop: 21.4, picked: 'PDF'},
+  {title: 'Tools', items: ['Merge', 'ZIP'], split: false, key: '⌘ Cmd',
+    ...nudged('Invoice April.pdf', 26.6, 80, 56), tap: 26.6, drop: 28.8, picked: 'Merge'},
+  {title: 'Tools', items: ['Resize', 'Rotate', 'Strip Metadata', 'ZIP'], split: false, key: '⌘ Cmd',
+    ...nudged('Vacation.jpg', 33.5, 70, -150), tap: 33.5, drop: 35.3, picked: 'Strip Metadata'},
+  {title: 'Actions', items: ['AirDrop', 'Copy', 'Move', 'Path', 'Terminal', 'Float'], split: false, key: '⌃ Ctrl',
+    ...nudged('Screen Recording.mov', 39.4, 70, -24), tap: 39.4, drop: 41.0, picked: 'Float'},
+];
+
+export const WHEEL_OPEN_DELAY = 0.08;
+/** The app hides the wheel 0.4 s after a drop. */
+export const WHEEL_HIDE_DELAY = 0.4;
+
 // ---- Selection ---------------------------------------------------------------------------------
 
 export const SELECTIONS: {name: string; from: number; to: number}[] = [
-  {name: 'Vacation.heic', from: 7.0, to: 11.6},
-  {name: 'Report.docx', from: 14.9, to: 21.6},
-  {name: 'Invoice March.pdf', from: 24.2, to: 30.0},
-  {name: 'Invoice April.pdf', from: 24.9, to: 30.0},
-  {name: 'Vacation.jpg', from: 31.9, to: 36.4},
-  {name: 'Screen Recording.mov', from: 37.9, to: 41.6},
+  {name: 'Vacation.heic', from: 7.6, to: 11.6},
+  {name: 'Report.docx', from: 15.2, to: 21.6},
+  {name: 'Invoice March.pdf', from: 24.2, to: 29.0},
+  {name: 'Invoice April.pdf', from: 24.8, to: 29.0},
+  {name: 'Vacation.jpg', from: 32.4, to: 36.4},
+  {name: 'Screen Recording.mov', from: 38.3, to: 41.6},
 ];
 
 export const selected = (name: string, t: number) =>
@@ -145,20 +158,20 @@ export const onSegment = (w: Wheel, index: number, radius: number, dx = 0) => {
 const g = rowGrab;
 
 export const WAYPOINTS: Waypoint[] = [
-  {t: 0, x: 1760, y: 1180},
-  {t: 5.0, x: 1760, y: 1180},
-  {t: 6.6, ...g('Vacation.heic', 6.6), bend: 0.12},
-  // Convert
-  {t: 7.1, ...g('Vacation.heic', 7.1)},
-  {t: 8.4, x: W(0).x, y: W(0).y, bend: -0.18},
+  {t: 0, x: 1500, y: 960},
+  {t: 5.0, x: 1500, y: 960},
+  {t: 7.2, ...g('Vacation.heic', 7.2), bend: 0.12},
+  // Convert: grab, nudge, tap
+  {t: 7.6, ...g('Vacation.heic', 7.6)},
+  {t: 8.35, x: W(0).x, y: W(0).y, bend: -0.25},
   {t: 8.85, x: W(0).x, y: W(0).y},
   {t: 9.9, ...onSegment(W(0), 0, 108, 52), bend: 0.25},
   {t: 11.4, ...onSegment(W(0), 0, 112, 50), bend: 0},
   {t: 12.2, ...onSegment(W(0), 0, 112, 50)},
-  {t: 14.4, ...g('Report.docx', 14.4), bend: 0.14},
+  {t: 14.8, ...g('Report.docx', 14.8), bend: 0.14},
   // Keep or replace
-  {t: 14.9, ...g('Report.docx', 14.9)},
-  {t: 16.2, x: W(1).x, y: W(1).y, bend: -0.16},
+  {t: 15.2, ...g('Report.docx', 15.2)},
+  {t: 16.15, x: W(1).x, y: W(1).y, bend: -0.25},
   {t: 16.7, x: W(1).x, y: W(1).y},
   {t: 17.6, ...onSegment(W(1), 0, 92, 60), bend: 0.2},
   {t: 19.2, ...onSegment(W(1), 0, 96, 59), bend: 0},
@@ -169,36 +182,36 @@ export const WAYPOINTS: Waypoint[] = [
   // Merge: click, cmd-click, drag both
   {t: 24.2, ...g('Invoice March.pdf', 24.2)},
   {t: 24.75, ...g('Invoice April.pdf', 24.75), bend: 0.3},
-  {t: 25.1, ...g('Invoice April.pdf', 25.1)},
-  {t: 26.4, x: W(2).x, y: W(2).y, bend: -0.16},
+  {t: 25.3, ...g('Invoice April.pdf', 25.3)},
+  {t: 26.3, x: W(2).x, y: W(2).y, bend: -0.25},
   {t: 26.85, x: W(2).x, y: W(2).y},
   {t: 27.8, ...onSegment(W(2), 0, 104, 65), bend: 0.25},
   {t: 28.8, ...onSegment(W(2), 0, 108, 64), bend: 0},
   {t: 29.3, ...onSegment(W(2), 0, 108, 64)},
-  {t: 30.0, x: 1720, y: 290, bend: 0.1},
-  {t: 30.6, x: 1720, y: 290},
-  {t: 31.6, ...g('Vacation.jpg', 31.6), bend: -0.12},
+  {t: 30.0, x: 1000, y: 140, bend: 0.1},
+  {t: 30.6, x: 1000, y: 140},
+  {t: 32.0, ...g('Vacation.jpg', 32.0), bend: -0.12},
   // Strip metadata
-  {t: 31.95, ...g('Vacation.jpg', 31.95)},
-  {t: 33.3, x: W(3).x, y: W(3).y, bend: -0.16},
+  {t: 32.4, ...g('Vacation.jpg', 32.4)},
+  {t: 33.2, x: W(3).x, y: W(3).y, bend: 0.25},
   {t: 33.75, x: W(3).x, y: W(3).y},
   {t: 34.7, ...onSegment(W(3), 2, 104, 96), bend: 0.22},
   {t: 35.3, ...onSegment(W(3), 2, 108, 97), bend: 0},
   {t: 35.6, ...onSegment(W(3), 2, 108, 97)},
-  {t: 37.5, ...g('Screen Recording.mov', 37.5), bend: -0.12},
+  {t: 37.9, ...g('Screen Recording.mov', 37.9), bend: -0.12},
   // Float
-  {t: 37.95, ...g('Screen Recording.mov', 37.95)},
-  {t: 39.2, x: W(4).x, y: W(4).y, bend: -0.16},
+  {t: 38.3, ...g('Screen Recording.mov', 38.3)},
+  {t: 39.1, x: W(4).x, y: W(4).y, bend: 0.25},
   {t: 39.65, x: W(4).x, y: W(4).y},
   {t: 40.5, ...onSegment(W(4), 5, 104, 60), bend: 0.22},
   {t: 41.0, ...onSegment(W(4), 5, 108, 59), bend: 0},
   {t: 41.9, ...onSegment(W(4), 5, 108, 59)},
-  {t: 42.6, x: 1640, y: 300, bend: -0.2},
-  {t: 42.85, x: 1640, y: 300},
-  {t: 43.9, x: 1250, y: 720, bend: 0.18},
-  {t: 44.4, x: 1250, y: 720},
-  {t: 45.4, x: 1780, y: 1200, bend: -0.1},
-  {t: 60, x: 1780, y: 1200},
+  {t: 42.6, x: 1240, y: 150, bend: -0.2},
+  {t: 42.85, x: 1240, y: 150},
+  {t: 43.9, x: 860, y: 430, bend: 0.18},
+  {t: 44.4, x: 860, y: 430},
+  {t: 45.4, x: 1500, y: 1000, bend: -0.1},
+  {t: 60, x: 1500, y: 1000},
 ];
 
 export const cursorAt = (t: number) => {
@@ -218,7 +231,7 @@ export const cursorAt = (t: number) => {
 };
 
 /** Mouse-button presses (for the small squeeze of the cursor). */
-export const CLICKS = [7.1, 14.9, 24.2, 24.75, 31.95, 37.95, 42.85];
+export const CLICKS = [7.6, 15.2, 24.2, 24.75, 32.4, 38.3, 42.85];
 
 // ---- Drags -------------------------------------------------------------------------------------
 
@@ -230,18 +243,18 @@ export interface Drag {
 }
 
 export const DRAGS: Drag[] = [
-  {files: [{name: 'Vacation.heic', kind: 'heic'}], from: 7.2, to: W(0).drop},
-  {files: [{name: 'Report.docx', kind: 'docx'}], from: 15.0, to: W(1).drop},
-  {files: [{name: 'Invoice March.pdf', kind: 'pdf'}, {name: 'Invoice April.pdf', kind: 'pdf'}], from: 25.2, to: W(2).drop},
-  {files: [{name: 'Vacation.jpg', kind: 'jpg'}], from: 32.05, to: W(3).drop},
-  {files: [{name: 'Screen Recording.mov', kind: 'mov'}], from: 38.05, to: W(4).drop},
+  {files: [{name: 'Vacation.heic', kind: 'heic'}], from: 7.7, to: W(0).drop},
+  {files: [{name: 'Report.docx', kind: 'docx'}], from: 15.3, to: W(1).drop},
+  {files: [{name: 'Invoice March.pdf', kind: 'pdf'}, {name: 'Invoice April.pdf', kind: 'pdf'}], from: 25.4, to: W(2).drop},
+  {files: [{name: 'Vacation.jpg', kind: 'jpg'}], from: 32.5, to: W(3).drop},
+  {files: [{name: 'Screen Recording.mov', kind: 'mov'}], from: 38.4, to: W(4).drop},
   {files: [{name: 'Screen Recording.mov', kind: 'mov'}], from: 42.95, to: 44.4},
 ];
 
 // ---- Captions ----------------------------------------------------------------------------------
 
 export const CAPTIONS: {title: string; text: string; from: number; to: number}[] = [
-  {title: 'Convert', text: 'Only formats that fit.', from: 7.3, to: 14.4},
+  {title: 'Convert', text: 'Only formats that fit.', from: 7.6, to: 14.4},
   {title: 'Inside', text: 'keep the original', from: 17.4, to: 19.7},
   {title: 'Outside', text: 'original to Trash', from: 19.8, to: 23.6},
   {title: 'Tools', text: 'Two PDFs → one.', from: 24.4, to: 31.4},
@@ -251,8 +264,9 @@ export const CAPTIONS: {title: string; text: string; from: number; to: number}[]
 
 // ---- Extras ------------------------------------------------------------------------------------
 
-export const TRASH = {x: 1780, y: 930, from: 20.0, to: 23.6, docxFly: 22.0};
-export const FLOAT = {appear: 41.35, x: 1580, y: 210, w: 168 * 1.4, h: 176 * 1.4, pull: 42.95};
+/** Screen coordinates (outside the scaled screen layer). */
+export const TRASH = {x: 1800, y: 1000, from: 20.0, to: 23.6, docxFly: 22.0};
+export const FLOAT = {appear: 41.35, x: 1120, y: 40, w: 168 * 1.4, h: 176 * 1.4, pull: 42.95};
 export const FAN = {from: 29.2, to: 31.2};
 export const META = {from: 35.35, strike: 35.9, to: 37.2};
 

@@ -94,8 +94,14 @@ export const Wheel: React.FC<{w: WheelData; t: number; cursor: {x: number; y: nu
         <filter id="wheel-shadow-hit" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="3" stdDeviation="7" floodColor="#000" floodOpacity="0.5" />
         </filter>
+        <radialGradient id="wheel-halo">
+          <stop offset="0.55" stopColor="#0E100D" stopOpacity="0.82" />
+          <stop offset="1" stopColor="#0E100D" stopOpacity="0" />
+        </radialGradient>
       </defs>
       <g transform={`translate(${w.x} ${w.y}) scale(${UI * (1 - collapse * 0.35)})`} opacity={1 - collapse} fontFamily={FONT}>
+        {/* Soft dark halo so the Finder list behind doesn't shine through the segments. */}
+        <circle r={outer + 46} fill="url(#wheel-halo)" opacity={clamp01((t - open) / 0.15)} />
         {order.map((i) => {
           const item = w.items[i];
           const a = 90 - i * step;

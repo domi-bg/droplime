@@ -52,9 +52,10 @@ export const Finder: React.FC<{t: number}> = ({t}) => {
           {/* Column header */}
           <div style={{height: FINDER.headerH, display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.5)',
             fontSize: 15, fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.07)'}}>
-            <div style={{width: 430, paddingLeft: 22}}>Name</div>
-            <div style={{width: 110}}>Size</div>
-            <div>Kind</div>
+            <div style={{width: 568, paddingLeft: 22}}>Name</div>
+            <div style={{width: 150}}>Size</div>
+            <div style={{width: 240}}>Kind</div>
+            <div>Date Modified</div>
           </div>
           {/* Zebra stripes stay put; the rows move over them. */}
           {Array.from({length: 10}, (_, i) => (
@@ -77,12 +78,13 @@ export const Finder: React.FC<{t: number}> = ({t}) => {
                 transform: `translateX(${(1 - p) * -18}px)`,
                 background: sel ? 'rgba(168,214,58,0.26)' : `rgba(201,235,106,${0.42 * glow})`,
                 boxShadow: glow > 0 ? `0 0 ${24 * glow}px rgba(168,214,58,${0.45 * glow})` : 'none'}}>
-                <div style={{width: 422, display: 'flex', alignItems: 'center', gap: 14, paddingLeft: 14}}>
+                <div style={{width: 560, display: 'flex', alignItems: 'center', gap: 14, paddingLeft: 14}}>
                   <div style={{opacity: iconGone ? 0 : 1}}><FileIcon kind={row.kind} size={ICON} id={`row-${row.name}`} /></div>
                   <span style={{whiteSpace: 'nowrap'}}>{row.name}</span>
                 </div>
-                <div style={{width: 110, color: 'rgba(255,255,255,0.55)', fontSize: 18}}>{row.size}</div>
-                <div style={{color: 'rgba(255,255,255,0.55)', fontSize: 18, whiteSpace: 'nowrap'}}>{row.type}</div>
+                <div style={{width: 150, color: 'rgba(255,255,255,0.55)', fontSize: 18}}>{row.size}</div>
+                <div style={{width: 240, color: 'rgba(255,255,255,0.55)', fontSize: 18, whiteSpace: 'nowrap'}}>{row.type}</div>
+                <div style={{color: 'rgba(255,255,255,0.55)', fontSize: 18, whiteSpace: 'nowrap'}}>{row.date}</div>
               </div>
             );
           })}

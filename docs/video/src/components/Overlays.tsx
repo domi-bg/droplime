@@ -1,5 +1,5 @@
 import {C, FONT, UI, clamp01, easeIn, easeInOut, easeOut, lerp, prog, springy, windowed} from '../theme';
-import {CAPTIONS, CLICKS, DRAGS, FAN, FLOAT, META, TRASH, WHEELS, cursorAt, keyCapActive} from '../timeline';
+import {CAPTIONS, CLICKS, DRAGS, FAN, FLOAT, META, SCREEN, TRASH, WHEELS, cursorAt, keyCapActive, toScreen} from '../timeline';
 import {FileIcon} from './FileIcon';
 import {rowIconCenter} from './Finder';
 
@@ -99,7 +99,7 @@ export const Captions: React.FC<{t: number}> = ({t}) => (
       const vis = windowed(t, c.from, c.to, 0.3);
       if (vis <= 0) return null;
       return (
-        <div key={c.title} style={{...abs(FINDER_LEFT, 80), opacity: vis, transform: `translateY(${(1 - vis) * 12}px)`,
+        <div key={c.title} style={{...abs(SCREEN.x + 2, 46), opacity: vis, transform: `translateY(${(1 - vis) * 12}px)`,
           fontFamily: FONT, color: '#fff'}}>
           <div style={{fontSize: 50, fontWeight: 700, letterSpacing: -0.5}}>
             <span style={{color: C.lime}}>{c.title}</span>
@@ -110,7 +110,6 @@ export const Captions: React.FC<{t: number}> = ({t}) => (
     })}
   </>
 );
-const FINDER_LEFT = 132;
 
 // ---- Trash (keep or replace) -----------------------------------------------------------------
 
@@ -120,7 +119,7 @@ export const Trash: React.FC<{t: number}> = ({t}) => {
   const land = TRASH.docxFly + 0.7;
   const bump = t > land && t < land + 0.4 ? Math.sin(((t - land) / 0.4) * Math.PI) : 0;
   const fly = prog(t, TRASH.docxFly, land, easeInOut);
-  const start = rowIconCenter('Report.docx', TRASH.docxFly);
+  const start = toScreen(rowIconCenter('Report.docx', TRASH.docxFly));
   const end = {x: TRASH.x, y: TRASH.y - 40};
   const fx = lerp(start.x, end.x, fly);
   const fy = lerp(start.y, end.y, fly) - Math.sin(fly * Math.PI) * 220;
@@ -145,7 +144,7 @@ export const Trash: React.FC<{t: number}> = ({t}) => {
         </svg>
       </div>
       {t >= TRASH.docxFly && t < land + 0.05 && (
-        <div style={{...abs(fx - 24, fy - 24), transform: `scale(${1.4 - 0.7 * fly}) rotate(${fly * 25}deg)`,
+        <div style={{...abs(fx - 24, fy - 24), transform: `scale(${(1.4 - 0.7 * fly) * SCREEN.scale}) rotate(${fly * 25}deg)`,
           opacity: 1 - prog(t, land - 0.1, land + 0.05)}}>
           <FileIcon kind="docx" size={48} id="fly-docx" />
         </div>
