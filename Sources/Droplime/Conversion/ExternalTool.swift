@@ -1,0 +1,45 @@
+import Foundation
+
+/// Sucht und startet Kommandozeilen-Werkzeuge wie ffmpeg, soffice oder pandoc.
+enum ExternalTool {
+    static let searchPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
+
+    static func find(_ name: String, extraPaths: [String] = []) -> URL? {
+        (extraPaths + searchPaths)
+            .map { URL(fileURLWithPath: $0).appendingPathComponent(name) }
+            .first { FileManager.default.isExecutableFile(atPath: $0.path) }
+    }
+
+    /// Führt das Werkzeug aus und gibt stdout zurück; wirft bei Exit-Code ≠ 0.
+    /// Die Ausgabe geht in Temp-Dateien, damit volle Pipes den Prozess nicht blockieren.
+    @discardableResult
+    static func run(_ executable: URL, _ arguments: [String]) async throws -> String {
+        let temp = FileManager.default.temporaryDirectory
+        let outURL = temp.appendingPathComponent(UUID().uuidString)
+        let errURL = temp.appendingPathComponent(UUID().uuidString)
+        FileManager.default.createFile(atPath: outURL.path, contents: nil)
+        FileManager.default.createFile(atPath: errURL.path, contents: nil)
+        defer {
+            try? FileManager.default.removeItem(at: outURL)
+            try? FileManager.default.removeItem(at: errURL)
+        }
+
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = try FileHandle(forWritingTo: outURL)
+        process.standardError = try FileHandle(forWritingTo: errURL)
+
+        let status: Int32 = try await withCheckedThrowingContinuation { continuation in
+            process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
+            do { try process.run() } catch { continuation.resume(throwing: error) }
+        }
+        guard status == 0 else {
+            let tail = ((try? String(contentsOf: errURL, encoding: .utf8)) ?? "")
+                .split(separator: "\n").suffix(3).joined(separator: "\n")
+            throw ConversionError(message: "\(executable.lastPathComponent) ist fehlgeschlagen:\n\(tail)")
+        }
+        return (try? String(contentsOf: outURL, encoding: .utf8)) ?? ""
+    }
+}
