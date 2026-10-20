@@ -24,7 +24,7 @@ enum WheelMode {
         switch self {
         case .convert: return []
         case .tools: return ["Komprimieren", "Zuschneiden", "Kürzen", "Teilen", "Zusammen", "Drehen"]
-        case .actions: return ["AirDrop", "Kopieren", "Verschieben", "Pfad", "Terminal", "Float"]
+        case .actions: return FileAction.allCases.map(\.label)
         }
     }
 }

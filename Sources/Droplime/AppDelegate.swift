@@ -76,10 +76,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handlePick(mode: WheelMode, item: String, urls: [URL], outer: Bool) {
-        guard mode == .convert, let format = currentTargets.first(where: { $0.label == item }) else {
+        switch mode {
+        case .convert:
+            if let format = currentTargets.first(where: { $0.label == item }) { convert(urls, to: format, outer: outer) }
+        case .actions:
+            guard let action = FileAction.allCases.first(where: { $0.label == item }) else { return }
+            // Erst nach dem Ende des Drags ausführen, damit Dialoge (z. B. Ordnerwahl) nicht mitten im Drag aufgehen.
+            DispatchQueue.main.async { [weak self] in
+                do {
+                    if try action.perform(on: urls), action != .airDrop, action != .float {
+                        NSSound(named: "Glass")?.play()
+                    }
+                } catch {
+                    self?.showError("Aktion fehlgeschlagen", error.localizedDescription)
+                }
+            }
+        case .tools:
             print("[\(mode.title)] \(item) ← \(urls.map(\.lastPathComponent).joined(separator: ", ")) (noch nicht umgesetzt)")
-            return
         }
+    }
+
+    private func convert(_ urls: [URL], to format: Format, outer: Bool) {
         let replace = switch settings.afterConversion {
         case .keep: false
         case .replace: true
@@ -91,14 +108,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 print("✓ \(urls.count) Datei(en) → \(format.label)\(replace ? " (Original im Papierkorb)" : "")")
                 NSSound(named: "Glass")?.play()
             } else {
-                let message = errors.map(\.localizedDescription).joined(separator: "\n\n")
-                print("✗ \(message)")
-                let alert = NSAlert()
-                alert.messageText = "Konvertierung fehlgeschlagen"
-                alert.informativeText = message
-                NSApp.activate()
-                alert.runModal()
+                showError("Konvertierung fehlgeschlagen", errors.map(\.localizedDescription).joined(separator: "\n\n"))
             }
         }
+    }
+
+    private func showError(_ title: String, _ message: String) {
+        print("✗ \(message)")
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        NSApp.activate()
+        alert.runModal()
     }
 }
