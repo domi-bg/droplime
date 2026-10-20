@@ -195,10 +195,6 @@ Regenerate images with `./scripts/make-icon.sh` (app icon) and `./scripts/make-s
 
 Ideas and pull requests are welcome.
 
-## Thanks
-
-Inspired by [Tangerine](https://tangerineformac.com) and [Convierto](https://github.com/nuance-dev/convierto). Droplime is an independent project and contains no code from either app.
-
 ## License
 
 [MIT](LICENSE)
