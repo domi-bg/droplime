@@ -12,6 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     /// Zielformate für die Dateien, die gerade gezogen werden.
     private var currentTargets: [Format] = []
+    private let toolService = ToolService.standard()
+    /// Werkzeuge für die Dateien, die gerade gezogen werden.
+    private var currentTools: [Tool] = []
     private static let maxWheelItems = 10
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -65,11 +68,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showWheel(_ mode: WheelMode) {
         var items = mode.items
-        if mode == .convert {
-            let urls = NSPasteboard(name: .drag).readObjects(
-                forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        let urls = NSPasteboard(name: .drag).readObjects(
+            forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        switch mode {
+        case .convert:
             currentTargets = Array(service.targets(for: urls).filter(settings.isEnabled).prefix(Self.maxWheelItems))
             items = currentTargets.map(\.label)
+        case .tools:
+            currentTools = Array(toolService.tools(for: urls).prefix(Self.maxWheelItems))
+            items = currentTools.map(\.label)
+        case .actions:
+            break
         }
         let split = mode == .convert && settings.afterConversion == .split
         wheel.show(mode: mode, items: items, split: split, at: NSEvent.mouseLocation)
@@ -92,7 +101,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         case .tools:
-            print("[\(mode.title)] \(item) ← \(urls.map(\.lastPathComponent).joined(separator: ", ")) (noch nicht umgesetzt)")
+            guard let tool = currentTools.first(where: { $0.label == item }) else { return }
+            Task {
+                do {
+                    let outputs = try await tool.run(urls)
+                    print("✓ \(tool.label): \(outputs.map(\.lastPathComponent).joined(separator: ", "))")
+                    NSSound(named: "Glass")?.play()
+                } catch {
+                    showError("\(tool.label) fehlgeschlagen", error.localizedDescription)
+                }
+            }
         }
     }
 

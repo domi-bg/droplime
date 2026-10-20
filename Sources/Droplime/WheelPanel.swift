@@ -79,6 +79,12 @@ final class WheelView: NSView {
         needsDisplay = true
     }
 
+    /// Hebt ein Feld hervor, ohne dass gezogen wird – für Vorschaubilder (scripts/make-screenshots).
+    func highlight(_ index: Int, outer: Bool = false) {
+        highlighted = Hit(index: index, outer: outer)
+        needsDisplay = true
+    }
+
     private var center: NSPoint { NSPoint(x: bounds.midX, y: bounds.midY) }
     private var step: CGFloat { 360 / CGFloat(max(items.count, 1)) }
 

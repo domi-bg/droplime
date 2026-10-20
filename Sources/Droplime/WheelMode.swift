@@ -19,11 +19,10 @@ enum WheelMode {
         }
     }
 
-    /// Feste Einträge; beim Konvertieren hängen sie von den gezogenen Dateien ab.
+    /// Feste Einträge; beim Konvertieren und bei Werkzeugen hängen sie von den gezogenen Dateien ab.
     var items: [String] {
         switch self {
-        case .convert: return []
-        case .tools: return ["Komprimieren", "Zuschneiden", "Kürzen", "Teilen", "Zusammen", "Drehen"]
+        case .convert, .tools: return []
         case .actions: return FileAction.allCases.map(\.label)
         }
     }
