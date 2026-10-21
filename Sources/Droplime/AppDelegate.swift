@@ -66,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Order = priority when several converters offer the same format.
         let optional: [Converter?] = [libreOffice, pandoc]
         service = ConversionService(converters:
-            [ImageConverter(), PDFConverter()] + optional.compactMap { $0 }
+            [ImageConverter(quality: { Settings.shared.lossyQuality }), PDFConverter()] + optional.compactMap { $0 }
             + [DocumentConverter(), MediaConverter()] + [ffmpeg].compactMap { $0 })
         tools = [("FFmpeg", ffmpeg != nil, "brew install ffmpeg"),
                  ("LibreOffice", libreOffice != nil, "brew install --cask libreoffice"),
@@ -90,6 +90,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsItem = NSMenuItem(title: L.menuSettings, action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+        let updateItem = NSMenuItem(title: L.menuCheckForUpdates, action: #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        menu.addItem(updateItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: L.menuQuit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
@@ -125,6 +128,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func advanceAnimation() {
         animationFrame = (animationFrame + 1) % animationFrames.count
         statusItem.button?.image = animationFrames[animationFrame]
+    }
+
+    /// Manual only: Droplime makes no network requests unless the user asks for this.
+    @objc private func checkForUpdates() {
+        Task { @MainActor in
+            let alert = NSAlert()
+            switch await UpdateChecker.check() {
+            case .upToDate(let version):
+                alert.messageText = L.updateUpToDate(version)
+            case .available(let version, let url):
+                alert.messageText = L.updateAvailable(version)
+                alert.addButton(withTitle: L.updateDownload)
+                alert.addButton(withTitle: L.updateLater)
+                NSApp.activate()
+                if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(url) }
+                return
+            case .failed(let message):
+                alert.messageText = L.updateCheckFailed
+                alert.informativeText = message
+            }
+            NSApp.activate()
+            alert.runModal()
+        }
     }
 
     @objc private func showSettings() {
@@ -178,7 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { [weak self] in
                 do {
                     if try action.perform(on: urls), action != .airDrop, action != .float {
-                        NSSound(named: "Glass")?.play()
+                        self?.playSuccessSound()
                     }
                 } catch {
                     self?.showError(L.actionFailed, error.localizedDescription)
@@ -191,7 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     let outputs = try await tool.run(urls)
                     let names = outputs.map(\.lastPathComponent).joined(separator: ", ")
                     Log.jobs.info("\(tool.label, privacy: .public) created \(names, privacy: .public)")
-                    NSSound(named: "Glass")?.play()
+                    self?.playSuccessSound()
                 } catch {
                     if error is CancellationError || Task.isCancelled { throw CancellationError() }
                     self?.showErrorLater(L.toolFailed(tool.label), error.localizedDescription)
@@ -214,11 +240,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if Task.isCancelled { throw CancellationError() }
             if errors.isEmpty {
                 Log.jobs.info("Converted \(urls.count) file(s) to \(format.label, privacy: .public)\(replace ? ", originals moved to Trash" : "", privacy: .public)")
-                NSSound(named: "Glass")?.play()
+                self?.playSuccessSound()
             } else {
                 self?.showErrorLater(L.conversionFailed, errors.map(\.localizedDescription).joined(separator: "\n\n"))
             }
         })
+    }
+
+    private func playSuccessSound() {
+        if settings.playSound { NSSound(named: "Glass")?.play() }
     }
 
     /// "1 file", "3 files" – for job titles in the log.

@@ -1,7 +1,9 @@
 #!/bin/sh
 # Builds build/Droplime.app (release, with icon, no Dock icon) and signs it ad hoc.
+# The version comes from $VERSION (default 0.1.0); the release workflow passes the tag.
 set -e
 cd "$(dirname "$0")/.."
+VERSION="${VERSION:-0.1.0}"
 swift build -c release
 app=build/Droplime.app
 rm -rf "$app"
@@ -19,7 +21,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundleExecutable</key><string>Droplime</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>1</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>

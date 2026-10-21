@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 
 struct SettingsView: View {
@@ -6,6 +7,9 @@ struct SettingsView: View {
     let available: Set<Format>
     /// Extra tool → found?
     let tools: [(name: String, found: Bool, install: String)]
+
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginError: String?
 
     /// Which extra tool unlocks an otherwise unavailable format.
     private static let requiredTool: [String: String] = [
@@ -16,6 +20,25 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section(L.settingsGeneral) {
+                Toggle(L.settingsLaunchAtLogin, isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
+                if let loginError {
+                    Text(L.loginError(loginError)).font(.caption).foregroundStyle(.red)
+                }
+                Toggle(L.settingsPlaySound, isOn: $settings.playSound)
+            }
+
+            Section {
+                HStack {
+                    Text(L.settingsQuality)
+                    Slider(value: $settings.lossyQuality, in: Settings.qualityRange, step: 0.01)
+                    Text("\(Int((settings.lossyQuality * 100).rounded())) %")
+                        .monospacedDigit().frame(width: 52, alignment: .trailing)
+                }
+            } footer: {
+                Text(L.settingsQualityFooter).foregroundStyle(.secondary)
+            }
+
             Section(L.settingsLanguage) {
                 Picker(L.settingsLanguage, selection: $settings.language) {
                     ForEach(AppLanguage.allCases) { Text($0.label).tag($0) }
@@ -67,6 +90,16 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+            loginError = nil
+        } catch {
+            loginError = error.localizedDescription
+        }
+        launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
     @ViewBuilder

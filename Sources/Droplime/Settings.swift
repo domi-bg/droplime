@@ -18,7 +18,7 @@ enum AfterConversion: String, CaseIterable, Identifiable {
 final class Settings: ObservableObject {
     static let shared = Settings()
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     @Published var language: AppLanguage {
         didSet { defaults.set(language.rawValue, forKey: "language") }
@@ -33,7 +33,33 @@ final class Settings: ObservableObject {
         didSet { defaults.set(Array(disabledFormats).sorted(), forKey: "disabledFormats") }
     }
 
-    private init() {
+    /// Whether a sound plays when a conversion, tool or action has finished.
+    @Published var playSound: Bool {
+        didSet { defaults.set(playSound, forKey: "playSound") }
+    }
+
+    /// Quality for lossy image formats (JPEG, HEIC, WebP, AVIF), 0.5 to 1.0.
+    @Published var lossyQuality: Double {
+        didSet {
+            let clamped = Self.clamp(lossyQuality)
+            // Assigning through @Published triggers didSet again, so only do it when something changes.
+            if clamped != lossyQuality { lossyQuality = clamped; return }
+            defaults.set(lossyQuality, forKey: "lossyQuality")
+        }
+    }
+
+    static let qualityRange: ClosedRange<Double> = 0.5...1.0
+
+    private static func clamp(_ quality: Double) -> Double {
+        min(max(quality, qualityRange.lowerBound), qualityRange.upperBound)
+    }
+
+    private convenience init() { self.init(defaults: .standard) }
+
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+        playSound = defaults.object(forKey: "playSound") as? Bool ?? true
+        lossyQuality = Self.clamp(defaults.object(forKey: "lossyQuality") as? Double ?? 0.9)
         language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
         afterConversion = AfterConversion(rawValue: defaults.string(forKey: "afterConversion") ?? "") ?? .keep
         disabledFormats = Set(defaults.stringArray(forKey: "disabledFormats") ?? [])

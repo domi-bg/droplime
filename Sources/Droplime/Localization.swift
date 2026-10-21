@@ -44,6 +44,13 @@ struct Strings {
     let groupImages, groupDocuments, groupSheets, groupVideo, groupAudio: String
     let settingsTools, toolFound, restartAfterInstall, notAvailableHere: String
     let needsTool: (String) -> String
+    let settingsGeneral, settingsLaunchAtLogin, settingsPlaySound, settingsQuality, settingsQualityFooter: String
+    let loginError: (String) -> String
+
+    // Updates
+    let menuCheckForUpdates, updateDownload, updateLater, updateCheckFailed, updateBadResponse: String
+    let updateAvailable, updateUpToDate: (String) -> String
+    let updateHTTPError: (Int) -> String
 
     // Tools and file names
     let toolResize, toolRotate, toolStripMetadata, toolMerge, toolSplit, toolCompress, toolRemoveAudio, toolZip, toolUnzip: String
@@ -88,6 +95,17 @@ struct Strings {
         restartAfterInstall: "Neu installierte Werkzeuge erkennt Droplime beim nächsten Öffnen der Einstellungen.",
         notAvailableHere: "Auf diesem Mac nicht verfügbar",
         needsTool: { "Braucht \($0)" },
+        settingsGeneral: "Allgemein", settingsLaunchAtLogin: "Beim Anmelden starten",
+        settingsPlaySound: "Ton nach dem Fertigstellen abspielen",
+        settingsQuality: "Qualität",
+        settingsQualityFooter: "Gilt für verlustbehaftete Bildformate wie JPEG, HEIC und WebP.",
+        loginError: { "Autostart konnte nicht geändert werden: \($0)" },
+        menuCheckForUpdates: "Nach Updates suchen …", updateDownload: "Laden", updateLater: "Später",
+        updateCheckFailed: "Update-Suche fehlgeschlagen",
+        updateBadResponse: "Unerwartete Antwort von GitHub.",
+        updateAvailable: { "Droplime \($0) ist verfügbar" },
+        updateUpToDate: { "Du bist auf dem neuesten Stand (Version \($0))" },
+        updateHTTPError: { "GitHub antwortete mit Status \($0)." },
         toolResize: "Verkleinern", toolRotate: "Drehen", toolStripMetadata: "Ohne Metadaten", toolMerge: "Zusammenfügen",
         toolSplit: "Teilen", toolCompress: "Komprimieren", toolRemoveAudio: "Ohne Ton", toolZip: "ZIP", toolUnzip: "Entpacken",
         suffixSmall: " (klein)", suffixRotated: " (gedreht)", suffixNoMetadata: " (ohne Metadaten)",
@@ -138,6 +156,17 @@ struct Strings {
         restartAfterInstall: "Droplime detects newly installed tools the next time Settings opens.",
         notAvailableHere: "Not available on this Mac",
         needsTool: { "Needs \($0)" },
+        settingsGeneral: "General", settingsLaunchAtLogin: "Launch at login",
+        settingsPlaySound: "Play a sound when finished",
+        settingsQuality: "Quality",
+        settingsQualityFooter: "Applies to lossy image formats such as JPEG, HEIC and WebP.",
+        loginError: { "Couldn’t change launch at login: \($0)" },
+        menuCheckForUpdates: "Check for Updates …", updateDownload: "Download", updateLater: "Later",
+        updateCheckFailed: "Update check failed",
+        updateBadResponse: "Unexpected response from GitHub.",
+        updateAvailable: { "Droplime \($0) is available" },
+        updateUpToDate: { "You’re up to date (version \($0))" },
+        updateHTTPError: { "GitHub answered with status \($0)." },
         toolResize: "Resize", toolRotate: "Rotate", toolStripMetadata: "Strip Metadata", toolMerge: "Merge",
         toolSplit: "Split", toolCompress: "Compress", toolRemoveAudio: "Remove Audio", toolZip: "ZIP", toolUnzip: "Unzip",
         suffixSmall: " (small)", suffixRotated: " (rotated)", suffixNoMetadata: " (no metadata)",

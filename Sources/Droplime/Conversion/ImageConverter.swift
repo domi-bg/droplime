@@ -8,6 +8,13 @@ struct ImageConverter: Converter {
     private static let writable = Set((CGImageDestinationCopyTypeIdentifiers() as? [String]) ?? [])
     private static let candidates: [Format] = [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp, .avif]
 
+    /// Quality for lossy formats, 0 to 1. A closure, so a changed setting applies to the next conversion.
+    let quality: () -> Double
+
+    init(quality: @escaping () -> Double = { 0.9 }) {
+        self.quality = quality
+    }
+
     var concurrent: Bool { true }
 
     func targets(for type: UTType) -> [Format] {
@@ -33,7 +40,7 @@ struct ImageConverter: Converter {
         guard let type = format.type,
               let destination = CGImageDestinationCreateWithURL(output as CFURL, type.identifier as CFString, 1, nil)
         else { throw ConversionError(message: L.notSupported(format.label)) }
-        let options = [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary
+        let options = [kCGImageDestinationLossyCompressionQuality: quality()] as CFDictionary
         if Self.metadataFormats.contains(format), let source = CGImageSourceCreateWithURL(input as CFURL, nil),
            CGImageSourceGetCount(source) > 0 {
             CGImageDestinationAddImageFromSource(destination, source, 0, options)
