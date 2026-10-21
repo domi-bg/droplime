@@ -30,7 +30,14 @@ final class WheelPanel: NSPanel {
         wheelView.configure(mode: mode, items: items, split: split)
         // Window only as large as the wheel so it doesn't cover other drop targets.
         let side = wheelView.diameter + 8
-        setFrame(NSRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side), display: true)
+        var rect = NSRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side)
+        // Keep the whole wheel on the screen that contains the cursor.
+        if let screen = NSScreen.screens.first(where: { NSMouseInRect(center, $0.frame, false) }) ?? NSScreen.main {
+            let visible = screen.visibleFrame
+            rect.origin.x = min(max(rect.minX, visible.minX), visible.maxX - side)
+            rect.origin.y = min(max(rect.minY, visible.minY), visible.maxY - side)
+        }
+        setFrame(rect, display: true)
         orderFrontRegardless()
     }
 
@@ -47,7 +54,7 @@ final class WheelPanel: NSPanel {
 final class WheelView: NSView {
     var onPick: ((WheelMode, String, [URL], Bool) -> Void)?
 
-    private struct Hit: Equatable {
+    struct Hit: Equatable {
         let index: Int
         let outer: Bool
     }
@@ -92,7 +99,7 @@ final class WheelView: NSView {
     /// Center angle of segment i in degrees; segment 0 at the top, then clockwise.
     private func angle(of i: Int) -> CGFloat { 90 - CGFloat(i) * step }
 
-    private func hit(at point: NSPoint) -> Hit? {
+    func hit(at point: NSPoint) -> Hit? {
         let dx = point.x - center.x, dy = point.y - center.y
         let distance = hypot(dx, dy)
         guard !items.isEmpty, distance >= innerRadius, distance <= outerRadius else { return nil }
