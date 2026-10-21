@@ -9,10 +9,7 @@ private func export(_ asset: AVAsset, preset: String, fileType: AVFileType, to o
     }
     session.outputURL = output
     session.outputFileType = fileType
-    await session.export()
-    if session.status != .completed {
-        throw ConversionError(message: session.error?.localizedDescription ?? L.exportFailed)
-    }
+    try await removingOutputOnFailure(output) { try await session.exportHonoringCancellation() }
 }
 
 private func isVideo(_ type: UTType) -> Bool { type.conforms(to: .movie) && playable.contains(type.identifier) }
@@ -67,8 +64,10 @@ struct CompressAudioTool: Tool {
     func run(_ urls: [URL]) async throws -> [URL] {
         try await eachFile(urls) { url in
             let output = ConversionService.outputURL(for: url, ext: "m4a", suffix: L.suffixCompressed)
-            try await ExternalTool.run(URL(fileURLWithPath: "/usr/bin/afconvert"),
-                                       ["-f", "m4af", "-d", "aac", "-b", "96000", url.path, output.path])
+            try await removingOutputOnFailure(output) {
+                try await ExternalTool.run(URL(fileURLWithPath: "/usr/bin/afconvert"),
+                                           ["-f", "m4af", "-d", "aac", "-b", "96000", url.path, output.path])
+            }
             return output
         }
     }

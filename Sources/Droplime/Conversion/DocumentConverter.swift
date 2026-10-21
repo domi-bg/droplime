@@ -30,11 +30,12 @@ struct DocumentConverter: Converter {
                                    ["-convert", name, "-output", output.path, input.path])
     }
 
-    /// Lays out the document on A4 pages and "prints" it to a PDF file.
+    /// Lays out the document on pages of the system's default paper size (A4 or Letter, depending on the region)
+    /// and "prints" it to a PDF file.
     @MainActor
     private static func printToPDF(_ input: URL, output: URL) throws {
         let text = try NSAttributedString(url: input, options: [:], documentAttributes: nil)
-        let paper = NSSize(width: 595, height: 842)
+        let paper = NSPrintInfo.shared.paperSize
         let margin: CGFloat = 56
 
         let info = NSPrintInfo(dictionary: [

@@ -9,12 +9,13 @@ enum LimeIcon {
     static let poppedSegment = 1
 
     /// Monochrome template for the menu bar; macOS tints it for light/dark mode.
-    static func menuBarImage() -> NSImage {
+    /// `popped` picks the popped-out segment; cycling it animates the icon while work is running.
+    static func menuBarImage(popped: Int = poppedSegment) -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
             let c = NSPoint(x: rect.midX - 0.6, y: rect.midY - 0.6)
             NSColor.black.set()
             for i in 0..<segmentCount {
-                let wedge = segment(i, of: segmentCount, center: offset(c, segment: i, by: i == poppedSegment ? 1.6 : 0),
+                let wedge = segment(i, of: segmentCount, center: offset(c, segment: i, by: i == popped % segmentCount ? 1.6 : 0),
                                     radius: 7, membrane: 1.1, corner: 0.5)
                 wedge.fill()
                 wedge.stroke()

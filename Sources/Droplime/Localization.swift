@@ -35,6 +35,8 @@ struct Strings {
 
     // Menu and settings
     let menuSettings, menuQuit, settingsWindowTitle: String
+    let menuConverting: (Int) -> String
+    let menuCancel: String
     let settingsLanguage: String
     let languageSystem: (String) -> String
     let settingsAfterConversion, afterKeep, afterReplace, afterSplit: String
@@ -70,6 +72,8 @@ struct Strings {
         wheelKeep: "Behalten", wheelReplace: "Ersetzen",
         wheelReceiving: "Empfange …", wheelReceiveFailed: "Fehlgeschlagen",
         menuSettings: "Einstellungen …", menuQuit: "Droplime beenden", settingsWindowTitle: "Droplime Einstellungen",
+        menuConverting: { $0 == 1 ? "1 Datei wird konvertiert …" : "\($0) Dateien werden konvertiert …" },
+        menuCancel: "Abbrechen",
         settingsLanguage: "Sprache",
         languageSystem: { "Systemsprache (\($0))" },
         settingsAfterConversion: "Nach dem Konvertieren",
@@ -81,7 +85,7 @@ struct Strings {
         groupImages: "Bilder", groupDocuments: "Dokumente", groupSheets: "Tabellen & Präsentationen",
         groupVideo: "Video", groupAudio: "Audio",
         settingsTools: "Zusatzwerkzeuge", toolFound: "gefunden",
-        restartAfterInstall: "Nach der Installation Droplime neu starten.",
+        restartAfterInstall: "Neu installierte Werkzeuge erkennt Droplime beim nächsten Öffnen der Einstellungen.",
         notAvailableHere: "Auf diesem Mac nicht verfügbar",
         needsTool: { "Braucht \($0)" },
         toolResize: "Verkleinern", toolRotate: "Drehen", toolStripMetadata: "Ohne Metadaten", toolMerge: "Zusammenfügen",
@@ -118,6 +122,8 @@ struct Strings {
         wheelKeep: "Keep", wheelReplace: "Replace",
         wheelReceiving: "Receiving …", wheelReceiveFailed: "Failed",
         menuSettings: "Settings …", menuQuit: "Quit Droplime", settingsWindowTitle: "Droplime Settings",
+        menuConverting: { $0 == 1 ? "Converting 1 file …" : "Converting \($0) files …" },
+        menuCancel: "Cancel",
         settingsLanguage: "Language",
         languageSystem: { "System language (\($0))" },
         settingsAfterConversion: "After converting",
@@ -129,7 +135,7 @@ struct Strings {
         groupImages: "Images", groupDocuments: "Documents", groupSheets: "Spreadsheets & presentations",
         groupVideo: "Video", groupAudio: "Audio",
         settingsTools: "Extra tools", toolFound: "found",
-        restartAfterInstall: "Restart Droplime after installing.",
+        restartAfterInstall: "Droplime detects newly installed tools the next time Settings opens.",
         notAvailableHere: "Not available on this Mac",
         needsTool: { "Needs \($0)" },
         toolResize: "Resize", toolRotate: "Rotate", toolStripMetadata: "Strip Metadata", toolMerge: "Merge",

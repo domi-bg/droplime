@@ -15,26 +15,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Target formats for the files currently being dragged.
     private var currentTargets: [Format] = []
     private let toolService = ToolService.standard()
+    private let jobs = JobQueue()
+    private var jobsObserver: AnyCancellable?
+    /// Files being converted or waiting; drives the menu bar animation and the progress menu items.
+    private var filesInProgress = 0
+    private var progressItem: NSMenuItem?
+    private var cancelItem: NSMenuItem?
+    private var progressSeparator: NSMenuItem?
+    private var animationTimer: Timer?
+    private var animationFrame = 0
+    private lazy var animationFrames = (0..<LimeIcon.segmentCount).map { LimeIcon.menuBarImage(popped: $0) }
     /// Tools for the files currently being dragged.
     private var currentTools: [Tool] = []
     private static let maxWheelItems = 10
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let ffmpeg = FFmpegConverter()
-        let libreOffice = LibreOfficeConverter()
-        let pandoc = PandocConverter()
-        // Order = priority when several converters offer the same format.
-        let optional: [Converter?] = [libreOffice, pandoc]
-        service = ConversionService(converters:
-            [ImageConverter(), PDFConverter()] + optional.compactMap { $0 }
-            + [DocumentConverter(), MediaConverter()] + [ffmpeg].compactMap { $0 })
-        tools = [("FFmpeg", ffmpeg != nil, "brew install ffmpeg"),
-                 ("LibreOffice", libreOffice != nil, "brew install --cask libreoffice"),
-                 ("Pandoc", pandoc != nil, "brew install pandoc")]
+        detectTools()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = LimeIcon.menuBarImage()
         buildMenu()
+        // @Published fires before the change, so take the new values from the publisher.
+        jobsObserver = jobs.$running.combineLatest(jobs.$pending).sink { [weak self] running, pending in
+            self?.showProgress(files: running + pending)
+        }
         // Switch language immediately: rebuild menu and window title (SwiftUI updates itself).
         languageObserver = settings.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
             self?.buildMenu()
@@ -53,19 +57,82 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.start()
     }
 
+    /// Looks for the optional tools and builds the converters from what is installed.
+    /// Runs at launch and whenever Settings opens, so newly installed tools need no restart.
+    private func detectTools() {
+        let ffmpeg = FFmpegConverter()
+        let libreOffice = LibreOfficeConverter()
+        let pandoc = PandocConverter()
+        // Order = priority when several converters offer the same format.
+        let optional: [Converter?] = [libreOffice, pandoc]
+        service = ConversionService(converters:
+            [ImageConverter(), PDFConverter()] + optional.compactMap { $0 }
+            + [DocumentConverter(), MediaConverter()] + [ffmpeg].compactMap { $0 })
+        tools = [("FFmpeg", ffmpeg != nil, "brew install ffmpeg"),
+                 ("LibreOffice", libreOffice != nil, "brew install --cask libreoffice"),
+                 ("Pandoc", pandoc != nil, "brew install pandoc")]
+        let found = tools.map { "\($0.name) \($0.found ? "found" : "missing")" }.joined(separator: ", ")
+        Log.tools.info("Optional tools: \(found, privacy: .public)")
+    }
+
     private func buildMenu() {
         let menu = NSMenu()
+        let progressItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        progressItem.isEnabled = false
+        let cancelItem = NSMenuItem(title: L.menuCancel, action: #selector(cancelJobs), keyEquivalent: "")
+        cancelItem.target = self
+        let progressSeparator = NSMenuItem.separator()
+        menu.autoenablesItems = false
+        menu.addItem(progressItem)
+        menu.addItem(cancelItem)
+        menu.addItem(progressSeparator)
+        (self.progressItem, self.cancelItem, self.progressSeparator) = (progressItem, cancelItem, progressSeparator)
         let settingsItem = NSMenuItem(title: L.menuSettings, action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: L.menuQuit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
+        showProgress(files: filesInProgress)
+    }
+
+    @objc private func cancelJobs() {
+        jobs.cancelAll()
+    }
+
+    /// While files are being converted: animated icon, tooltip, progress and Cancel items in the menu.
+    private func showProgress(files: Int) {
+        filesInProgress = files
+        let busy = files > 0
+        progressItem?.title = busy ? L.menuConverting(files) : ""
+        for item in [progressItem, cancelItem, progressSeparator] { item?.isHidden = !busy }
+        statusItem.button?.toolTip = busy ? L.menuConverting(files) : nil
+        if busy, animationTimer == nil {
+            // Common modes, so the animation keeps running while the menu is open or an alert is shown.
+            let timer = Timer(timeInterval: 1.0 / 8, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.advanceAnimation() }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            animationTimer = timer
+        } else if !busy, let timer = animationTimer {
+            timer.invalidate()
+            animationTimer = nil
+            statusItem.button?.image = LimeIcon.menuBarImage()
+        }
+    }
+
+    /// Moves the popped-out segment one step clockwise around the ring.
+    private func advanceAnimation() {
+        animationFrame = (animationFrame + 1) % animationFrames.count
+        statusItem.button?.image = animationFrames[animationFrame]
     }
 
     @objc private func showSettings() {
-        if settingsWindow == nil {
-            let view = SettingsView(settings: settings, available: service.producibleFormats, tools: tools)
+        detectTools()
+        let view = SettingsView(settings: settings, available: service.producibleFormats, tools: tools)
+        if let window = settingsWindow {
+            window.contentViewController = NSHostingController(rootView: view)
+        } else {
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
             window.title = L.settingsWindowTitle
             window.styleMask = [.titled, .closable]
@@ -119,15 +186,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         case .tools:
             guard let tool = currentTools.first(where: { $0.label == item }) else { return }
-            Task {
+            jobs.enqueue(Job(title: "\(tool.label): \(Self.fileCount(urls.count))", fileCount: urls.count) { [weak self] in
                 do {
                     let outputs = try await tool.run(urls)
-                    print("✓ \(tool.label): \(outputs.map(\.lastPathComponent).joined(separator: ", "))")
+                    let names = outputs.map(\.lastPathComponent).joined(separator: ", ")
+                    Log.jobs.info("\(tool.label, privacy: .public) created \(names, privacy: .public)")
                     NSSound(named: "Glass")?.play()
                 } catch {
-                    showError(L.toolFailed(tool.label), error.localizedDescription)
+                    if error is CancellationError || Task.isCancelled { throw CancellationError() }
+                    self?.showErrorLater(L.toolFailed(tool.label), error.localizedDescription)
                 }
-            }
+            })
         }
     }
 
@@ -137,19 +206,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .replace: true
         case .split: outer
         }
-        Task {
+        let service = service!
+        let concurrency = service.isConcurrent(urls, to: format) ? ConversionService.maxConcurrentFiles : 1
+        jobs.enqueue(Job(title: "\(Self.fileCount(urls.count)) → \(format.label)", fileCount: urls.count,
+                         concurrency: concurrency) { [weak self] in
             let errors = await service.convert(urls, to: format, replaceOriginals: replace).errors
+            if Task.isCancelled { throw CancellationError() }
             if errors.isEmpty {
-                print("✓ \(urls.count) file(s) → \(format.label)\(replace ? " (original moved to Trash)" : "")")
+                Log.jobs.info("Converted \(urls.count) file(s) to \(format.label, privacy: .public)\(replace ? ", originals moved to Trash" : "", privacy: .public)")
                 NSSound(named: "Glass")?.play()
             } else {
-                showError(L.conversionFailed, errors.map(\.localizedDescription).joined(separator: "\n\n"))
+                self?.showErrorLater(L.conversionFailed, errors.map(\.localizedDescription).joined(separator: "\n\n"))
             }
-        }
+        })
+    }
+
+    /// "1 file", "3 files" – for job titles in the log.
+    private static func fileCount(_ n: Int) -> String { n == 1 ? "1 file" : "\(n) files" }
+
+    /// Shows the alert after the current job has finished, so the modal alert doesn't hold up the queue.
+    private func showErrorLater(_ title: String, _ message: String) {
+        DispatchQueue.main.async { [weak self] in self?.showError(title, message) }
     }
 
     private func showError(_ title: String, _ message: String) {
-        print("✗ \(message)")
+        Log.jobs.error("\(title, privacy: .public): \(message, privacy: .public)")
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message

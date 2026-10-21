@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 /// PDF → images (one file per page) or text.
 struct PDFConverter: Converter {
+    var concurrent: Bool { true }
+
     func targets(for type: UTType) -> [Format] {
         type.conforms(to: .pdf) ? [.png, .jpg, .txt] : []
     }

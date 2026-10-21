@@ -14,7 +14,10 @@ extension Tool {
     /// For tools that process each file on its own.
     func eachFile(_ urls: [URL], _ body: (URL) async throws -> URL) async throws -> [URL] {
         var outputs: [URL] = []
-        for url in urls { outputs.append(try await body(url)) }
+        for url in urls {
+            try Task.checkCancellation()
+            outputs.append(try await body(url))
+        }
         return outputs
     }
 }

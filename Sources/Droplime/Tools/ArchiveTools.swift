@@ -15,14 +15,18 @@ struct ZipTool: Tool {
         if urls.count == 1 {
             let output = FileAction.uniqueDestination(
                 for: URL(fileURLWithPath: urls[0].lastPathComponent).appendingPathExtension("zip"), in: folder)
-            try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", "--keepParent", urls[0].path, output.path])
+            try await removingOutputOnFailure(output) {
+                try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", "--keepParent", urls[0].path, output.path])
+            }
             return [output]
         }
         let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.archiveFileName + ".zip"), in: folder)
         if urls.allSatisfy({ $0.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL }) {
             // Same parent folder: zip the items by relative name, no copying needed.
-            try await ExternalTool.run(zip, ["-r", "-y", "-X", output.path] + urls.map(\.lastPathComponent),
-                                       currentDirectory: folder)
+            try await removingOutputOnFailure(output) {
+                try await ExternalTool.run(zip, ["-r", "-y", "-X", output.path] + urls.map(\.lastPathComponent),
+                                           currentDirectory: folder)
+            }
             return [output]
         }
         // Items from different folders: copy into a temp folder and zip its contents.
@@ -30,7 +34,9 @@ struct ZipTool: Tool {
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileAction.copy(urls, to: temp)
-        try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", temp.path, output.path])
+        try await removingOutputOnFailure(output) {
+            try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", temp.path, output.path])
+        }
         return [output]
     }
 }
@@ -45,7 +51,9 @@ struct UnzipTool: Tool {
         try await eachFile(urls) { url in
             let output = FileAction.uniqueDestination(
                 for: url.deletingPathExtension(), in: url.deletingLastPathComponent())
-            try await ExternalTool.run(ditto, ["-x", "-k", url.path, output.path])
+            try await removingOutputOnFailure(output) {
+                try await ExternalTool.run(ditto, ["-x", "-k", url.path, output.path])
+            }
             return output
         }
     }

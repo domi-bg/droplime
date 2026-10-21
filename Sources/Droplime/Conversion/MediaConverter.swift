@@ -53,9 +53,22 @@ struct MediaConverter: Converter {
         }
         session.outputURL = output
         session.outputFileType = fileType
-        await session.export()
-        if session.status != .completed {
-            throw ConversionError(message: session.error?.localizedDescription ?? L.exportFailed)
+        try await session.exportHonoringCancellation()
+    }
+}
+
+extension AVAssetExportSession {
+    /// Exports and throws on failure; task cancellation cancels the export and throws `CancellationError`.
+    func exportHonoringCancellation() async throws {
+        try Task.checkCancellation()
+        await withTaskCancellationHandler {
+            await export()
+        } onCancel: {
+            cancelExport()
+        }
+        if status == .cancelled || Task.isCancelled { throw CancellationError() }
+        if status != .completed {
+            throw ConversionError(message: error?.localizedDescription ?? L.exportFailed)
         }
     }
 }

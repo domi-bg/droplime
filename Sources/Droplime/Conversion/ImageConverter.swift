@@ -8,6 +8,8 @@ struct ImageConverter: Converter {
     private static let writable = Set((CGImageDestinationCopyTypeIdentifiers() as? [String]) ?? [])
     private static let candidates: [Format] = [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp, .avif]
 
+    var concurrent: Bool { true }
+
     func targets(for type: UTType) -> [Format] {
         guard type.conforms(to: .image) else { return [] }
         let formats = Self.candidates.filter { $0.type.map { Self.writable.contains($0.identifier) } ?? false }
