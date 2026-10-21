@@ -14,6 +14,7 @@
   <img alt="Swift" src="https://img.shields.io/badge/Swift-5.10-a8d63a?logo=swift&logoColor=white">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-a8d63a">
   <img alt="Offline" src="https://img.shields.io/badge/100%25-offline-1d1f1b">
+  <img alt="CI" src="https://github.com/domi-bg/droplime/actions/workflows/ci.yml/badge.svg">
 </p>
 
 <p align="center">
@@ -143,6 +144,8 @@ Lime icon in the menu bar → **Settings …** (<kbd>⌘ ,</kbd>):
 ## Installation
 
 Requirements: macOS 14 (Sonoma) or later, Xcode or the Swift toolchain.
+
+A ready-built ZIP is attached to each [GitHub Release](https://github.com/domi-bg/droplime/releases). Droplime is not notarized, so on first launch macOS may refuse to open it. Right-click the app and choose *Open*, or run `xattr -d com.apple.quarantine /Applications/Droplime.app`.
 
 ```bash
 git clone https://github.com/domi-bg/droplime.git

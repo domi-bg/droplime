@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+      - name: Install ffmpeg
+        run: brew install ffmpeg
+      - name: Build
+        run: swift build
+      - name: Test
+        run: swift test
+      - name: Build app bundle
+        run: sh scripts/build-app.sh
+      - name: Zip app
+        run: ditto -c -k --keepParent build/Droplime.app Droplime.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: Droplime.zip
+          generate_release_notes: true
