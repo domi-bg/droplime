@@ -31,8 +31,10 @@ struct PDFConverter: Converter {
     /// Renders at 144 dpi (twice the PDF resolution) on a white background.
     private static func render(_ page: PDFPage, as format: Format, to url: URL) throws {
         let scale: CGFloat = 2
-        let bounds = page.bounds(for: .mediaBox)
-        let width = Int(bounds.width * scale), height = Int(bounds.height * scale)
+        let bounds = page.bounds(for: .cropBox)
+        let sideways = page.rotation % 180 != 0
+        let width = Int((sideways ? bounds.height : bounds.width) * scale)
+        let height = Int((sideways ? bounds.width : bounds.height) * scale)
         guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                                       space: CGColorSpace(name: CGColorSpace.sRGB)!,
                                       bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
@@ -40,7 +42,7 @@ struct PDFConverter: Converter {
         context.setFillColor(.white)
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
         context.scaleBy(x: scale, y: scale)
-        page.draw(with: .mediaBox, to: context)
+        page.draw(with: .cropBox, to: context)
         guard let image = context.makeImage(), let type = format.type,
               let destination = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil)
         else { throw ConversionError(message: L.pageFailed) }
