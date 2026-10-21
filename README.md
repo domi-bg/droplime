@@ -13,7 +13,7 @@
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1d1f1b?logo=apple">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-5.10-a8d63a?logo=swift&logoColor=white">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-a8d63a">
-  <img alt="Offline" src="https://img.shields.io/badge/100%25-offline-1d1f1b">
+  <img alt="Offline" src="https://img.shields.io/badge/no-telemetry-1d1f1b">
   <img alt="CI" src="https://github.com/domi-bg/droplime/actions/workflows/ci.yml/badge.svg">
 </p>
 
@@ -23,7 +23,7 @@
 
 ---
 
-Droplime lives quietly in your menu bar. While you drag a file (from Finder, the desktop or almost any app), tap a key and a wheel opens at your cursor with exactly the options that fit that file. Release the file on a segment and the result appears right next to the original.
+Droplime lives quietly in your menu bar. While you drag a file (from Finder, the desktop or almost any app), tap a key and a wheel opens at your cursor with exactly the options that fit that file. Release the file on a segment and the result appears right next to the original. Drags from Mail, Photos and Safari work too: the promised files are received into Downloads and the result lands next to them.
 
 | Key while dragging | Wheel | What for |
 |---|---|---|
@@ -53,10 +53,10 @@ The wheel only shows formats the dragged file can **actually** be converted to. 
 
 Built in, no extra software needed:
 
-- **Images**: reads PNG, JPG, HEIC, TIFF, GIF, BMP, SVG and RAW → PNG, JPG, HEIC, TIFF, GIF, BMP, **PDF**
+- **Images**: reads PNG, JPG, HEIC, TIFF, GIF, BMP, SVG and RAW → PNG, JPG, HEIC, TIFF, GIF, BMP, **PDF**, and AVIF where macOS can write it. EXIF orientation and metadata are kept.
 - **PDF** → PNG or JPG (one file per page), **TXT** (extract the text)
 - **Text documents**: DOCX, DOC, ODT, RTF, HTML, TXT → DOCX, ODT, RTF, HTML, TXT, **PDF**
-- **Video**: MP4, MOV, M4V → MP4, MOV, **M4A** (audio only)
+- **Video**: MP4, MOV, M4V → MP4, MOV, **M4A** (audio only). MOV ↔ MP4 is remuxed without re-encoding when the codecs allow.
 - **Audio**: MP3, M4A, WAV, AIFF, FLAC, CAF → M4A, WAV, AIFF
 
 <br clear="right">
@@ -69,7 +69,9 @@ Optional extra tools make the wheel bigger. Droplime finds them automatically an
 | [LibreOffice](https://www.libreoffice.org) | `brew install --cask libreoffice` | faithful DOCX → PDF, spreadsheets (XLSX, ODS, CSV), presentations (PPTX → PDF) |
 | [Pandoc](https://pandoc.org) | `brew install pandoc` | Markdown ↔ DOCX, HTML, ODT, EPUB |
 
-If a file name is already taken, you get `Name 2.jpg`. Droplime never overwrites anything.
+FFmpeg uses the VideoToolbox hardware encoders when available. If a file name is already taken, you get `Name 2.jpg`. Droplime never overwrites anything.
+
+Long jobs show progress: the lime in the menu bar animates and the menu shows *Converting N files …* with a **Cancel** item. Image and PDF conversions run several at once, everything else one after another.
 
 ## Keep or replace the original
 
@@ -103,7 +105,7 @@ The tools wheel adapts too: two PDFs offer *Merge*, a photo offers *Resize* and 
 | Video | **Compress** | HEVC, at most 1080p, usually a fraction of the size |
 | | **Remove Audio** | audio track removed, video untouched |
 | Audio | **Compress** | AAC at 96 kbit/s |
-| anything, including folders | **ZIP** | like “Compress” in Finder; several items become `Archive.zip` |
+| anything, including folders | **ZIP** | like “Compress” in Finder; several items become `Archive.zip`, without copying them first |
 | ZIP | **Unzip** | into a folder next to it |
 
 <br clear="right">
@@ -128,16 +130,21 @@ Actions work with everything: files, folders, mixed selections.
 
 Lime icon in the menu bar → **Settings …** (<kbd>⌘ ,</kbd>):
 
+- **Launch at login**: start Droplime automatically.
+- **Play a sound when finished**: a short sound after a job is done.
+- **Quality**: 50–100 % for lossy image formats (JPG, HEIC, WebP, AVIF).
 - **Language**: English or German. On first launch Droplime follows the system language (German on a German system, English otherwise); switching takes effect immediately, no restart.
 - **After converting**: keep, replace, or choose in the wheel (see above).
 - **Formats in the wheel**: untick formats you never need and they won't show up again. Smart suggestions stay: only formats that fit the file *and* are ticked appear.
-- **Extra tools**: shows whether FFmpeg, LibreOffice and Pandoc were found and how to install them. Hover over a greyed-out format to see which tool unlocks it.
+- **Extra tools**: shows whether FFmpeg, LibreOffice and Pandoc were found and how to install them. Hover over a greyed-out format to see which tool unlocks it. Newly installed tools are detected the next time Settings opens, no restart needed.
+
+The menu also has **Check for Updates …**, which asks GitHub for the latest release.
 
 <br clear="right">
 
 ## Privacy
 
-- **Everything happens on your Mac.** Droplime has no networking code: no uploads, no accounts, no telemetry.
+- **Everything happens on your Mac.** No uploads, no accounts, no telemetry. Droplime never contacts the network on its own; the only request is **Check for Updates …** (a call to the GitHub releases API), and only when you click it.
 - **No special permissions.** Droplime notices drags and key taps without Accessibility or Screen Recording access.
 - **Nothing gets lost.** Originals are only replaced if you ask for it, and then go to the Trash.
 
@@ -154,7 +161,7 @@ cd droplime
 open build/Droplime.app
 ```
 
-You can move `build/Droplime.app` to `/Applications`. To start Droplime at login: *System Settings → General → Login Items* → add Droplime.
+You can move `build/Droplime.app` to `/Applications`. To start Droplime at login, switch on *Launch at login* in Settings. The app version comes from the release tag.
 
 For more formats (optional):
 
@@ -163,13 +170,16 @@ brew install ffmpeg pandoc
 brew install --cask libreoffice
 ```
 
-Then restart Droplime.
+Droplime picks them up the next time you open Settings, no restart needed.
 
 ## Development
 
 ```bash
-swift run      # run directly, log output goes to the terminal
+swift run      # run directly, logs go to the unified log (see below)
 swift test     # tests: real sample files through every format and every tool
+
+# live log of an installed build
+log stream --predicate 'subsystem == "app.droplime.Droplime"'
 ```
 
 | Path | Contents |
@@ -187,13 +197,15 @@ swift test     # tests: real sample files through every format and every tool
 **New tool:** implement `Tool` (`applies(to:)`, `run(_:)`) and add it to `ToolService.standard()`.
 **Texts and translations:** all visible strings live in `Sources/Droplime/Localization.swift`, once per language. A missing translation fails the build.
 
+Idle CPU is 0 %: Droplime only polls while the mouse button is down.
+
 Regenerate images with `./scripts/make-icon.sh` (app icon) and `./scripts/make-screenshots.sh` (the images in this README).
 
 ## Limitations and plans
 
 - Tools that need a selection, like **trimming** a video or **cropping** an image, need a small UI and aren't there yet.
 - The keys are fixed (Shift, Cmd, Ctrl) and can't be changed yet.
-- Long conversions don't show progress yet; a sound tells you when they're done.
+- Progress is only shown as the animated menu bar icon and a count; there is no per-file percentage yet.
 - The wheel shows at most 10 entries, and their order can't be customized yet.
 
 Ideas and pull requests are welcome.
