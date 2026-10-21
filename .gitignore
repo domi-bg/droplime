@@ -7,3 +7,4 @@ build/
 docs/video/node_modules/
 docs/video/out/
 docs/video/public/music.wav
+.claude/

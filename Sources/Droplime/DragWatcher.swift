@@ -14,17 +14,24 @@ final class DragWatcher {
     private var isFileDrag = false
     private var lastFlags: NSEvent.ModifierFlags = []
     private var timer: Timer?
-    private var monitor: Any?
+    private var monitors: [Any] = []
 
     func start() {
         // If the button is already down at launch, it counts as up until the next mouse-down.
         baselineChangeCount = dragPasteboard.changeCount
-        // Global monitors for mouse events need no permission (unlike key events).
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { [weak self] event in
-            let isDown = event.type == .leftMouseDown
-            MainActor.assumeIsolated {
-                if isDown { self?.mouseDown() } else { self?.mouseUp() }
-            }
+        // Global monitors for mouse events need no permission (unlike key events), but they
+        // don't see our own windows, so a local one covers drags out of the Float window.
+        let events: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseUp]
+        monitors = [
+            NSEvent.addGlobalMonitorForEvents(matching: events) { [weak self] event in self?.handle(event) },
+            NSEvent.addLocalMonitorForEvents(matching: events) { [weak self] event in self?.handle(event); return event },
+        ].compactMap { $0 }
+    }
+
+    private nonisolated func handle(_ event: NSEvent) {
+        let isDown = event.type == .leftMouseDown
+        MainActor.assumeIsolated {
+            if isDown { mouseDown() } else { mouseUp() }
         }
     }
 
