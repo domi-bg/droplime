@@ -13,7 +13,7 @@ enum ExternalTool {
     /// Runs the tool and returns stdout; throws on a non-zero exit code.
     /// Output goes to temp files so full pipes can't block the process.
     @discardableResult
-    static func run(_ executable: URL, _ arguments: [String]) async throws -> String {
+    static func run(_ executable: URL, _ arguments: [String], currentDirectory: URL? = nil) async throws -> String {
         let temp = FileManager.default.temporaryDirectory
         let outURL = temp.appendingPathComponent(UUID().uuidString)
         let errURL = temp.appendingPathComponent(UUID().uuidString)
@@ -27,6 +27,7 @@ enum ExternalTool {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
+        process.currentDirectoryURL = currentDirectory
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = try FileHandle(forWritingTo: outURL)
         process.standardError = try FileHandle(forWritingTo: errURL)

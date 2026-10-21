@@ -24,13 +24,31 @@ struct MediaConverter: Converter {
                                        ["-f", file, "-d", data, input.path, output.path])
             return
         }
-        let preset = format == .m4a ? AVAssetExportPresetAppleM4A : AVAssetExportPresetHighestQuality
         let fileType: AVFileType = switch format {
         case .mp4: .mp4
         case .mov: .mov
         default: .m4a
         }
-        guard let session = AVAssetExportSession(asset: AVURLAsset(url: input), presetName: preset) else {
+        let asset = AVURLAsset(url: input)
+        // MOV <-> MP4: if the tracks fit the target container, remux instead of re-encoding.
+        if format != .m4a, await Self.canRemux(asset, to: fileType) {
+            if (try? await Self.export(asset, preset: AVAssetExportPresetPassthrough, fileType: fileType, output: output)) != nil {
+                return
+            }
+            try? FileManager.default.removeItem(at: output)
+        }
+        let preset = format == .m4a ? AVAssetExportPresetAppleM4A : AVAssetExportPresetHighestQuality
+        try await Self.export(asset, preset: preset, fileType: fileType, output: output)
+    }
+
+    /// True if the passthrough preset can write the asset's tracks as `fileType`.
+    private static func canRemux(_ asset: AVAsset, to fileType: AVFileType) async -> Bool {
+        guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else { return false }
+        return await session.compatibleFileTypes.contains(fileType)
+    }
+
+    private static func export(_ asset: AVAsset, preset: String, fileType: AVFileType, output: URL) async throws {
+        guard let session = AVAssetExportSession(asset: asset, presetName: preset) else {
             throw ConversionError(message: L.exportFailed)
         }
         session.outputURL = output

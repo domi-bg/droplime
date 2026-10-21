@@ -2,6 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 private let ditto = URL(fileURLWithPath: "/usr/bin/ditto")
+private let zip = URL(fileURLWithPath: "/usr/bin/zip")
 
 /// Packs files and folders into a ZIP, like "Compress" in Finder.
 struct ZipTool: Tool {
@@ -17,12 +18,18 @@ struct ZipTool: Tool {
             try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", "--keepParent", urls[0].path, output.path])
             return [output]
         }
-        // Several items: copy into a temp folder and zip its contents.
+        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.archiveFileName + ".zip"), in: folder)
+        if urls.allSatisfy({ $0.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL }) {
+            // Same parent folder: zip the items by relative name, no copying needed.
+            try await ExternalTool.run(zip, ["-r", "-y", "-X", output.path] + urls.map(\.lastPathComponent),
+                                       currentDirectory: folder)
+            return [output]
+        }
+        // Items from different folders: copy into a temp folder and zip its contents.
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
         try FileAction.copy(urls, to: temp)
-        let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.archiveFileName + ".zip"), in: folder)
         try await ExternalTool.run(ditto, ["-c", "-k", "--sequesterRsrc", temp.path, output.path])
         return [output]
     }
