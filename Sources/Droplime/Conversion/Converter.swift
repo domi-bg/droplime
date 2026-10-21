@@ -78,10 +78,14 @@ final class ConversionService {
     }
 
     /// Formats possible for all files, excluding their current format.
-    /// When converters overlap, the one listed first wins.
     func targets(for urls: [URL]) -> [Format] {
-        let perFile = urls.map { url -> [Format] in
-            guard let type = Self.type(of: url) else { return [] }
+        targets(forTypes: Self.types(of: urls))
+    }
+
+    /// Formats possible for files of all the given types, excluding their current format.
+    /// When converters overlap, the one listed first wins.
+    func targets(forTypes types: [UTType]) -> [Format] {
+        let perFile = types.map { type -> [Format] in
             var seen = Set<Format>()
             return converters
                 .flatMap { $0.targets(for: type) }
@@ -129,6 +133,18 @@ final class ConversionService {
 
     static func type(of url: URL) -> UTType? {
         (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
+    }
+
+    /// The types of all files in order, or none at all if one of them is unknown.
+    static func types(of urls: [URL]) -> [UTType] {
+        let types = urls.compactMap(type(of:))
+        return types.count == urls.count ? types : []
+    }
+
+    /// Types for the given identifiers (UTIs), or none at all if one of them is unknown.
+    static func types(identifiers: [String]) -> [UTType] {
+        let types = identifiers.compactMap { UTType($0) }
+        return types.count == identifiers.count ? types : []
     }
 
     /// "photo.png" → "photo.jpg", on collision "photo 2.jpg", "photo 3.jpg" …

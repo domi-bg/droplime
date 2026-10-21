@@ -31,6 +31,7 @@ struct Strings {
     // Wheel
     let modeConvert, modeTools, modeActions, nothingPossible: String
     let wheelKeep, wheelReplace: String
+    let wheelReceiving, wheelReceiveFailed: String
 
     // Menu and settings
     let menuSettings, menuQuit, settingsWindowTitle: String
@@ -67,6 +68,7 @@ struct Strings {
     static let german = Strings(
         modeConvert: "Konvertieren", modeTools: "Werkzeuge", modeActions: "Aktionen", nothingPossible: "Nichts möglich",
         wheelKeep: "Behalten", wheelReplace: "Ersetzen",
+        wheelReceiving: "Empfange …", wheelReceiveFailed: "Fehlgeschlagen",
         menuSettings: "Einstellungen …", menuQuit: "Droplime beenden", settingsWindowTitle: "Droplime Einstellungen",
         settingsLanguage: "Sprache",
         languageSystem: { "Systemsprache (\($0))" },
@@ -114,6 +116,7 @@ struct Strings {
     static let english = Strings(
         modeConvert: "Convert", modeTools: "Tools", modeActions: "Actions", nothingPossible: "Nothing to do",
         wheelKeep: "Keep", wheelReplace: "Replace",
+        wheelReceiving: "Receiving …", wheelReceiveFailed: "Failed",
         menuSettings: "Settings …", menuQuit: "Quit Droplime", settingsWindowTitle: "Droplime Settings",
         settingsLanguage: "Language",
         languageSystem: { "System language (\($0))" },

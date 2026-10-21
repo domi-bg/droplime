@@ -15,6 +15,9 @@ final class DragWatcher {
     private var lastFlags: NSEvent.ModifierFlags = []
     private var timer: Timer?
     private var monitors: [Any] = []
+    /// File URLs, or file promises as from Mail attachments, Photos or Safari images.
+    private static let fileTypes: Set<NSPasteboard.PasteboardType> =
+        Set([.fileURL] + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType(rawValue: $0) })
 
     func start() {
         // If the button is already down at launch, it counts as up until the next mouse-down.
@@ -60,7 +63,7 @@ final class DragWatcher {
 
         // A new drag writes to the drag pasteboard and bumps its changeCount.
         if !isFileDrag, dragPasteboard.changeCount != baselineChangeCount {
-            isFileDrag = dragPasteboard.types?.contains(.fileURL) ?? false
+            isFileDrag = dragPasteboard.types?.contains { Self.fileTypes.contains($0) } ?? false
             baselineChangeCount = dragPasteboard.changeCount
         }
 

@@ -27,8 +27,12 @@ final class ToolService {
     }
 
     func tools(for urls: [URL]) -> [Tool] {
-        let types = urls.compactMap(ConversionService.type(of:))
-        guard !types.isEmpty, types.count == urls.count else { return [] }
+        tools(forTypes: ConversionService.types(of: urls))
+    }
+
+    /// Tools for files of the given types (in file order).
+    func tools(forTypes types: [UTType]) -> [Tool] {
+        guard !types.isEmpty else { return [] }
         return tools.filter { $0.applies(to: types) }
     }
 

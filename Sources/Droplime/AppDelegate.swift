@@ -79,14 +79,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showWheel(_ mode: WheelMode) {
         var items = mode.items
-        let urls = NSPasteboard(name: .drag).readObjects(
+        let pasteboard = NSPasteboard(name: .drag)
+        let urls = pasteboard.readObjects(
             forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        // Without file URLs the drag may carry file promises (Mail, Photos, Safari), which only know their types.
+        let promises = pasteboard.readObjects(forClasses: [NSFilePromiseReceiver.self]) as? [NSFilePromiseReceiver] ?? []
+        let types = urls.isEmpty
+            ? ConversionService.types(identifiers: promises.flatMap(\.fileTypes))
+            : ConversionService.types(of: urls)
         switch mode {
         case .convert:
-            currentTargets = Array(service.targets(for: urls).filter(settings.isEnabled).prefix(Self.maxWheelItems))
+            currentTargets = Array(service.targets(forTypes: types).filter(settings.isEnabled).prefix(Self.maxWheelItems))
             items = currentTargets.map(\.label)
         case .tools:
-            currentTools = Array(toolService.tools(for: urls).prefix(Self.maxWheelItems))
+            currentTools = Array(toolService.tools(forTypes: types).prefix(Self.maxWheelItems))
             items = currentTools.map(\.label)
         case .actions:
             break
