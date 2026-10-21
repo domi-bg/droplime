@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// Images via ImageIO. Only offers formats ImageIO can write on this system.
 struct ImageConverter: Converter {
     private static let writable = Set((CGImageDestinationCopyTypeIdentifiers() as? [String]) ?? [])
-    private static let candidates: [Format] = [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]
+    private static let candidates: [Format] = [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp, .avif]
 
     func targets(for type: UTType) -> [Format] {
         guard type.conforms(to: .image) else { return [] }
@@ -14,9 +14,12 @@ struct ImageConverter: Converter {
         return formats + [.pdf]
     }
 
+    /// Formats that carry EXIF/orientation; these are copied from the source so the metadata survives.
+    private static let metadataFormats: [Format] = [.jpg, .heic, .tiff, .png, .webp, .avif]
+
     func convert(_ input: URL, to format: Format, output: URL) async throws {
-        let image = try Self.loadImage(input)
         if format == .pdf {
+            let image = try Self.upright(input)
             guard let page = PDFPage(image: NSImage(cgImage: image, size: .zero)) else {
                 throw ConversionError(message: L.pdfFailed)
             }
@@ -29,10 +32,21 @@ struct ImageConverter: Converter {
               let destination = CGImageDestinationCreateWithURL(output as CFURL, type.identifier as CFString, 1, nil)
         else { throw ConversionError(message: L.notSupported(format.label)) }
         let options = [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary
-        CGImageDestinationAddImage(destination, image, options)
+        if Self.metadataFormats.contains(format), let source = CGImageSourceCreateWithURL(input as CFURL, nil),
+           CGImageSourceGetCount(source) > 0 {
+            CGImageDestinationAddImageFromSource(destination, source, 0, options)
+        } else {
+            CGImageDestinationAddImage(destination, try Self.upright(input), options)
+        }
         guard CGImageDestinationFinalize(destination) else {
             throw ConversionError(message: L.cannotWrite(format.label))
         }
+    }
+
+    /// Pixels with the EXIF orientation applied; NSImage fallback (e.g. SVG) when ImageIO cannot read the file.
+    private static func upright(_ url: URL) throws -> CGImage {
+        if let (image, _) = try? uprightImage(url) { return image }
+        return try loadImage(url)
     }
 
     /// ImageIO first; NSImage as a fallback, e.g. for SVG.

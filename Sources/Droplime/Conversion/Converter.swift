@@ -14,6 +14,7 @@ struct Format: Hashable {
     static let tiff = Format(label: "TIFF", ext: "tiff")
     static let gif = Format(label: "GIF", ext: "gif")
     static let bmp = Format(label: "BMP", ext: "bmp")
+    static let avif = Format(label: "AVIF", ext: "avif")
     static let webp = Format(label: "WebP", ext: "webp")
     static let pdf = Format(label: "PDF", ext: "pdf")
     static let txt = Format(label: "TXT", ext: "txt")
@@ -42,7 +43,7 @@ struct Format: Hashable {
     /// All target formats, grouped for Settings.
     static var groups: [(title: String, formats: [Format])] {
         [
-            (L.groupImages, [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp]),
+            (L.groupImages, [.png, .jpg, .heic, .tiff, .webp, .gif, .bmp, .avif]),
             (L.groupDocuments, [.pdf, .docx, .odt, .rtf, .html, .txt, .md, .epub]),
             (L.groupSheets, [.xlsx, .ods, .csv, .pptx]),
             (L.groupVideo, [.mp4, .mov, .mkv, .webm]),

@@ -4,7 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// Reads an image with its EXIF orientation applied (as Finder displays it).
-private func uprightImage(_ url: URL, maxPixelSize: Int? = nil) throws -> (CGImage, CFString) {
+func uprightImage(_ url: URL, maxPixelSize: Int? = nil) throws -> (CGImage, CFString) {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), let type = CGImageSourceGetType(source),
           let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
           let width = props[kCGImagePropertyPixelWidth] as? Int, let height = props[kCGImagePropertyPixelHeight] as? Int

@@ -1,7 +1,9 @@
 import AppKit
 import AVFoundation
+import ImageIO
 import PDFKit
 import Testing
+import UniformTypeIdentifiers
 @testable import Droplime
 
 /// Creates sample files and converts each one to every offered format.
@@ -49,6 +51,57 @@ struct ConversionTests {
         NSGraphicsContext.current = nil
         try rep.representation(using: .png, properties: [:])!.write(to: url)
         return url
+    }
+
+    /// JPEG 80×40 with EXIF orientation 6 (displays as 40×80) and an EXIF user comment.
+    private func rotatedPhoto() throws -> URL {
+        let url = folder.appendingPathComponent("photo.jpg")
+        let context = CGContext(data: nil, width: 80, height: 40, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        context.setFillColor(CGColor(red: 0.6, green: 0.8, blue: 0.2, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 80, height: 40))
+        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(destination, context.makeImage()!, [
+            kCGImagePropertyOrientation: 6,
+            kCGImagePropertyExifDictionary: [kCGImagePropertyExifUserComment: "keep me"],
+        ] as CFDictionary)
+        #expect(CGImageDestinationFinalize(destination))
+        return url
+    }
+
+    private func properties(_ url: URL) throws -> [CFString: Any] {
+        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
+        return try #require(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+    }
+
+    @Test func conversionKeepsOrientationAndExif() async throws {
+        let photo = try rotatedPhoto()
+
+        func convert(_ format: Format) async throws -> URL {
+            let output = ConversionService.outputURL(for: photo, ext: format.ext)
+            let errors = await service.convert([photo], to: format).errors
+            #expect(errors.isEmpty, "\(format.label): \(errors)")
+            return output
+        }
+
+        let png = try await convert(.png)
+        #expect(try properties(png)[kCGImagePropertyOrientation] as? Int == 6)
+        let displayed = try #require(NSImage(contentsOf: png)).size
+        #expect(displayed.height > displayed.width)
+
+        for format in [Format.gif, .bmp] {
+            let props = try properties(try await convert(format))
+            #expect(props[kCGImagePropertyPixelWidth] as? Int == 40, "\(format.label)")
+            #expect(props[kCGImagePropertyPixelHeight] as? Int == 80, "\(format.label)")
+        }
+
+        let page = try #require(PDFDocument(url: try await convert(.pdf))?.page(at: 0))
+        let bounds = page.bounds(for: .mediaBox)
+        #expect(bounds.height > bounds.width)
+
+        let jpg = try await convert(.jpg)
+        let exif = try #require(try properties(jpg)[kCGImagePropertyExifDictionary] as? [CFString: Any])
+        #expect(exif[kCGImagePropertyExifUserComment] as? String == "keep me")
     }
 
     @Test func pdfWithoutTextFails() async throws {
