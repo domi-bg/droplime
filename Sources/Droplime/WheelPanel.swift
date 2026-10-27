@@ -4,12 +4,6 @@ import os
 /// Floating borderless window at the cursor that shows the radial menu.
 @MainActor
 final class WheelPanel: NSPanel {
-    /// `outer` is true when the outer ("replace") ring of the split wheel was chosen.
-    var onPick: ((_ mode: WheelMode, _ item: String, _ urls: [URL], _ outer: Bool) -> Void)? {
-        get { wheelView.onPick }
-        set { wheelView.onPick = newValue }
-    }
-
     private let wheelView = WheelView(frame: .zero)
     private var hideWork: DispatchWorkItem?
 
@@ -27,9 +21,12 @@ final class WheelPanel: NSPanel {
         wheelView.onBusyEnded = { [weak self] failed in self?.hideSoon(after: failed ? 2.5 : 0.4) }
     }
 
-    func show(mode: WheelMode, items: [String], split: Bool, at point: NSPoint) {
+    /// `onPick` gets the index of the dropped-on item; `outer` is true when the outer ("replace") ring of the split wheel was chosen.
+    func show(mode: WheelMode, items: [String], split: Bool, at point: NSPoint,
+              onPick: @escaping (_ index: Int, _ urls: [URL], _ outer: Bool) -> Void) {
         hideWork?.cancel()
         let center = isVisible ? NSPoint(x: frame.midX, y: frame.midY) : point
+        wheelView.onPick = onPick
         wheelView.configure(mode: mode, items: items, split: split)
         // Window only as large as the wheel so it doesn't cover other drop targets.
         let side = wheelView.diameter + 8
@@ -60,7 +57,7 @@ final class WheelPanel: NSPanel {
 
 /// Draws the wheel segments and accepts dropped files.
 final class WheelView: NSView {
-    var onPick: ((WheelMode, String, [URL], Bool) -> Void)?
+    var onPick: ((_ index: Int, _ urls: [URL], _ outer: Bool) -> Void)?
     /// True while files promised by the drag source (Mail, Photos, Safari) are being received.
     private(set) var isBusy = false
     /// Called when receiving promised files has finished; `failed` if it didn't work.
@@ -288,11 +285,11 @@ final class WheelView: NSView {
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let target = hit(at: convert(sender.draggingLocation, from: nil)) else { return false }
         let pasteboard = sender.draggingPasteboard
-        let mode = mode, item = items[target.index]
+        let item = items[target.index], pick = pick(at: target)
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
            !urls.isEmpty {
             showCenter("✓ \(item)")
-            onPick?(mode, item, urls, target.outer)
+            pick(urls)
             return true
         }
         // File promises: let the source write the files into Downloads, then continue as with a normal drop.
@@ -307,7 +304,7 @@ final class WheelView: NSView {
             self.isBusy = false
             if errors.isEmpty, !urls.isEmpty {
                 self.showCenter("✓ \(item)")
-                self.onPick?(mode, item, urls, target.outer)
+                pick(urls)
                 self.onBusyEnded?(false)
             } else {
                 for error in errors { Self.logger.error("Receiving a promised file failed: \(error.localizedDescription)") }
@@ -318,18 +315,47 @@ final class WheelView: NSView {
         return true
     }
 
+    /// Binds the dropped-on segment now, so files that arrive later still go to it even if another wheel was shown meanwhile.
+    func pick(at target: Hit) -> ([URL]) -> Void {
+        let onPick = onPick
+        return { urls in onPick?(target.index, urls, target.outer) }
+    }
+
     private func showCenter(_ text: String) {
         centerText = text
         highlighted = nil
         needsDisplay = true
     }
 
-    /// State of one receive; only touched on its serial operation queue.
-    private final class PromiseResults {
-        var urls: [URL] = []
-        var errors: [Error] = []
-        var expected: Int?
-        var finished = false
+    /// Results of one receive; only used on the main thread. Calls `completion` once, when every file
+    /// has arrived or failed or when timed out, whichever comes first; anything after that is ignored.
+    final class PromiseReceipt {
+        private let expected: Int
+        private let completion: ([URL], [Error]) -> Void
+        private var urls: [URL] = []
+        private var errors: [Error] = []
+        private(set) var isFinished = false
+
+        init(expected: Int, completion: @escaping ([URL], [Error]) -> Void) {
+            self.expected = expected
+            self.completion = completion
+        }
+
+        func add(_ url: URL, error: Error?) {
+            guard !isFinished else { return }
+            if let error { errors.append(error) } else { urls.append(url) }
+            if urls.count + errors.count >= expected { finish(errors: errors) }
+        }
+
+        func timeOut(with error: Error) {
+            guard !isFinished else { return }
+            finish(errors: errors + [error])
+        }
+
+        private func finish(errors: [Error]) {
+            isFinished = true
+            completion(urls, errors)
+        }
     }
 
     /// Longest wait for promised files, so the wheel can never stay busy forever.
@@ -339,38 +365,21 @@ final class WheelView: NSView {
     /// or with an error after `receiveTimeout`.
     private func receive(_ receivers: [NSFilePromiseReceiver], into folder: URL,
                          completion: @escaping ([URL], [Error]) -> Void) {
-        let queue = OperationQueue()
-        queue.maxConcurrentOperationCount = 1
-        let results = PromiseResults()
-        let finishIfDone = {
-            guard !results.finished, let expected = results.expected,
-                  results.urls.count + results.errors.count >= expected else { return }
-            results.finished = true
-            let urls = results.urls, errors = results.errors
-            DispatchQueue.main.async { completion(urls, errors) }
-        }
-        for receiver in receivers {
-            receiver.receivePromisedFiles(atDestination: folder, options: [:], operationQueue: queue) { url, error in
-                if let error { results.errors.append(error) } else { results.urls.append(url) }
-                finishIfDone()
-            }
-        }
-        // The reader runs once per promised file. Set on the queue so it is ordered with the reader calls.
+        // The reader runs once per promised file.
         let expected = receivers.reduce(0) { sum, receiver in
             sum + (receiver.fileNames.isEmpty ? max(receiver.fileTypes.count, 1) : receiver.fileNames.count)
         }
-        queue.addOperation {
-            results.expected = expected
-            finishIfDone()
-        }
-        let timeoutError = ConversionError(message: L.wheelReceiveFailed)
-        DispatchQueue.global().asyncAfter(deadline: .now() + Self.receiveTimeout) {
-            queue.addOperation {
-                guard !results.finished else { return }
-                results.finished = true
-                let urls = results.urls, errors = results.errors + [timeoutError]
-                DispatchQueue.main.async { completion(urls, errors) }
+        let receipt = PromiseReceipt(expected: expected, completion: completion)
+        // Reading can block this queue as long as the source takes (e.g. an iCloud download),
+        // so results and the timeout are handled on the main thread instead.
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        for receiver in receivers {
+            receiver.receivePromisedFiles(atDestination: folder, options: [:], operationQueue: queue) { url, error in
+                DispatchQueue.main.async { receipt.add(url, error: error) }
             }
         }
+        let timeoutError = ConversionError(message: L.wheelReceiveFailed)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.receiveTimeout) { receipt.timeOut(with: timeoutError) }
     }
 }

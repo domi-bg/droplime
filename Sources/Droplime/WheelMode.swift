@@ -18,12 +18,4 @@ enum WheelMode {
         case .actions: return L.modeActions
         }
     }
-
-    /// Fixed entries; for Convert and Tools they depend on the dragged files.
-    var items: [String] {
-        switch self {
-        case .convert, .tools: return []
-        case .actions: return FileAction.allCases.map(\.label)
-        }
-    }
 }

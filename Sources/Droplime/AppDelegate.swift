@@ -12,8 +12,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tools: [(name: String, found: Bool, install: String)] = []
     private var settingsWindow: NSWindow?
     private var languageObserver: AnyCancellable?
-    /// Target formats for the files currently being dragged.
-    private var currentTargets: [Format] = []
     private let toolService = ToolService.standard()
     private let jobs = JobQueue()
     private var jobsObserver: AnyCancellable?
@@ -25,8 +23,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var animationTimer: Timer?
     private var animationFrame = 0
     private lazy var animationFrames = (0..<LimeIcon.segmentCount).map { LimeIcon.menuBarImage(popped: $0) }
-    /// Tools for the files currently being dragged.
-    private var currentTools: [Tool] = []
     private static let maxWheelItems = 10
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -50,9 +46,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         watcher.onMouseUp = { [weak self] in
             self?.wheel.hideSoon()
-        }
-        wheel.onPick = { [weak self] mode, item, urls, outer in
-            self?.handlePick(mode: mode, item: item, urls: urls, outer: outer)
         }
         watcher.start()
     }
@@ -171,7 +164,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showWheel(_ mode: WheelMode) {
-        var items = mode.items
         let pasteboard = NSPasteboard(name: .drag)
         let urls = pasteboard.readObjects(
             forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
@@ -180,26 +172,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let types = urls.isEmpty
             ? ConversionService.types(identifiers: promises.flatMap(\.fileTypes))
             : ConversionService.types(of: urls)
+        let choices: [WheelChoice]
         switch mode {
         case .convert:
-            currentTargets = Array(service.targets(forTypes: types).filter(settings.isEnabled).prefix(Self.maxWheelItems))
-            items = currentTargets.map(\.label)
+            choices = service.targets(forTypes: types).filter(settings.isEnabled).prefix(Self.maxWheelItems).map { .format($0) }
         case .tools:
-            currentTools = Array(toolService.tools(forTypes: types).prefix(Self.maxWheelItems))
-            items = currentTools.map(\.label)
+            choices = toolService.tools(forTypes: types).prefix(Self.maxWheelItems).map { .tool($0) }
         case .actions:
-            break
+            choices = FileAction.allCases.map { .action($0) }
         }
         let split = mode == .convert && settings.afterConversion == .split
-        wheel.show(mode: mode, items: items, split: split, at: NSEvent.mouseLocation)
+        // Picks refer to this wheel's choices, so promised files that arrive late still run what they were dropped on.
+        wheel.show(mode: mode, items: choices.map(\.label), split: split, at: NSEvent.mouseLocation) { [weak self] index, urls, outer in
+            self?.handlePick(choices[index], urls: urls, outer: outer)
+        }
     }
 
-    private func handlePick(mode: WheelMode, item: String, urls: [URL], outer: Bool) {
-        switch mode {
-        case .convert:
-            if let format = currentTargets.first(where: { $0.label == item }) { convert(urls, to: format, outer: outer) }
-        case .actions:
-            guard let action = FileAction.allCases.first(where: { $0.label == item }) else { return }
+    private func handlePick(_ choice: WheelChoice, urls: [URL], outer: Bool) {
+        switch choice {
+        case .format(let format):
+            convert(urls, to: format, outer: outer)
+        case .action(let action):
             // Run after the drag has ended so dialogs (e.g. the folder picker) don't open mid-drag.
             DispatchQueue.main.async { [weak self] in
                 do {
@@ -210,13 +203,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.showError(L.actionFailed, error.localizedDescription)
                 }
             }
-        case .tools:
-            guard let tool = currentTools.first(where: { $0.label == item }) else { return }
+        case .tool(let tool):
             jobs.enqueue(Job(title: "\(tool.label): \(Self.fileCount(urls.count))", fileCount: urls.count) { [weak self] in
                 do {
                     let outputs = try await tool.run(urls)
                     let names = outputs.map(\.lastPathComponent).joined(separator: ", ")
-                    Log.jobs.info("\(tool.label, privacy: .public) created \(names, privacy: .public)")
+                    Log.jobs.info("\(tool.label, privacy: .public) created \(names, privacy: .private)")
                     self?.playSuccessSound()
                 } catch {
                     if error is CancellationError || Task.isCancelled { throw CancellationError() }
@@ -260,11 +252,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showError(_ title: String, _ message: String) {
-        Log.jobs.error("\(title, privacy: .public): \(message, privacy: .public)")
+        Log.jobs.error("\(title, privacy: .public): \(message, privacy: .private)")
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message
         NSApp.activate()
         alert.runModal()
+    }
+}
+
+/// What a wheel segment runs, fixed when the wheel is shown.
+private enum WheelChoice {
+    case format(Format), tool(Tool), action(FileAction)
+
+    var label: String {
+        switch self {
+        case .format(let format): return format.label
+        case .tool(let tool): return tool.label
+        case .action(let action): return action.label
+        }
     }
 }

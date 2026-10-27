@@ -42,9 +42,12 @@ final class DragWatcher {
         guard timer == nil else { return }
         baselineChangeCount = dragPasteboard.changeCount
         lastFlags = NSEvent.modifierFlags.intersection([.shift, .command, .control])
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        // Common modes, so polling continues during a drag out of our own Float window or while a menu or alert tracks.
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func mouseUp() {
