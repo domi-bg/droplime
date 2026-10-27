@@ -114,6 +114,22 @@ struct ToolTests {
         #expect(FileManager.default.fileExists(atPath: unpacked.appendingPathComponent("note.txt").path))
     }
 
+    /// A file named like a zip option ("-m" = move into archive) must be archived, never deleting the others.
+    @Test func zipKeepsFilesNamedLikeOptions() async throws {
+        let option = folder.appendingPathComponent("-m")
+        let report = folder.appendingPathComponent("report.txt")
+        try Data("option".utf8).write(to: option)
+        try Data("report".utf8).write(to: report)
+
+        let zip = try await tool(L.toolZip, for: [option, report]).run([option, report])[0]
+        #expect(FileManager.default.fileExists(atPath: option.path))
+        #expect(FileManager.default.fileExists(atPath: report.path))
+
+        let unpacked = try await tool(L.toolUnzip, for: [zip]).run([zip])[0]
+        #expect(try String(contentsOf: unpacked.appendingPathComponent("-m"), encoding: .utf8) == "option")
+        #expect(try String(contentsOf: unpacked.appendingPathComponent("report.txt"), encoding: .utf8) == "report")
+    }
+
     @Test(.enabled(if: ExternalTool.find("ffmpeg") != nil, "Needs ffmpeg to create a test video"))
     func videoTools() async throws {
         let mov = folder.appendingPathComponent("movie.mov")

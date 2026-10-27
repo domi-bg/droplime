@@ -23,8 +23,9 @@ struct ZipTool: Tool {
         let output = FileAction.uniqueDestination(for: URL(fileURLWithPath: L.archiveFileName + ".zip"), in: folder)
         if urls.allSatisfy({ $0.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL }) {
             // Same parent folder: zip the items by relative name, no copying needed.
+            // "--" ends the options, so a file named like "-m" is archived instead of read as a flag.
             try await removingOutputOnFailure(output) {
-                try await ExternalTool.run(zip, ["-r", "-y", "-X", output.path] + urls.map(\.lastPathComponent),
+                try await ExternalTool.run(zip, ["-r", "-y", "-X", output.path, "--"] + urls.map(\.lastPathComponent),
                                            currentDirectory: folder)
             }
             return [output]

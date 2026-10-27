@@ -95,22 +95,30 @@ private final class EncoderProbe: @unchecked Sendable {
     }
 
     private let done = DispatchGroup()
-    private var result: [Format: [String]] = [:]
+    /// The probe's result, or nil while it is still running. `gaveUp` is set once a caller timed out.
+    private let state = OSAllocatedUnfairLock(initialState: (result: [Format: [String]]?.none, gaveUp: false))
 
     private init(_ executable: URL) {
         done.enter()
         DispatchQueue.global(qos: .userInitiated).async { [self] in
             let encoders = FFmpegConverter.availableEncoders(executable)
             let options = FFmpegConverter.options(encoders: encoders)
-            result = options
+            state.withLock { $0.result = options }
             Log.tools.info("ffmpeg has \(encoders.count) encoders; offers \(options.keys.map(\.label).sorted().joined(separator: ", "), privacy: .public)")
             done.leave()
         }
     }
 
-    /// Blocks only until the first probe has finished; afterwards returns immediately.
+    /// Waits at most a few seconds for the first probe; afterwards returns immediately.
+    /// If ffmpeg hangs, its formats are left out instead of blocking the main thread.
     var options: [Format: [String]] {
-        done.wait()
-        return result
+        let (result, gaveUp) = state.withLock { ($0.result, $0.gaveUp) }
+        if let result { return result }
+        if gaveUp { return [:] }
+        if done.wait(timeout: .now() + 5) == .timedOut {
+            state.withLock { $0.gaveUp = true }
+            Log.tools.error("ffmpeg -encoders did not finish in time; ffmpeg formats are left out")
+        }
+        return state.withLock { $0.result } ?? [:]
     }
 }

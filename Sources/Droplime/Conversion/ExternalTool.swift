@@ -52,7 +52,7 @@ enum ExternalTool {
         guard status == 0 else {
             let tail = ((try? String(contentsOf: errURL, encoding: .utf8)) ?? "")
                 .split(separator: "\n").suffix(3).joined(separator: "\n")
-            Log.tools.error("\(name, privacy: .public) exited with \(status): \(tail, privacy: .public)")
+            Log.tools.error("\(name, privacy: .public) exited with \(status): \(tail, privacy: .private)")
             throw ConversionError(message: L.externalToolFailed(name, tail))
         }
         Log.tools.info("\(name, privacy: .public) finished")
