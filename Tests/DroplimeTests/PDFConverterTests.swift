@@ -73,4 +73,90 @@ struct PDFConverterTests {
         #expect(try !isBlack(image, 150, 100))
         #expect(try !isBlack(image, 450, 100))
     }
+
+    private func makeDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("DroplimePDF-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func makePDF(pages: Int, in dir: URL, options: [PDFDocumentWriteOption: Any] = [:]) throws -> URL {
+        let document = PDFDocument()
+        for index in 0..<pages {
+            let page = try #require(PDFPage(image: NSImage(size: NSSize(width: 50, height: 50), flipped: false) { rect in
+                NSColor.black.setFill()
+                rect.fill()
+                return true
+            }))
+            document.insert(page, at: index)
+        }
+        let url = dir.appendingPathComponent("doc.pdf")
+        #expect(document.write(to: url, withOptions: options))
+        return url
+    }
+
+    private func files(in dir: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: dir.path).sorted()
+    }
+
+    @Test(arguments: [Format.png, .jpg, .txt]) func lockedPDFThrowsAndLeavesNoOutput(format: Format) async throws {
+        let dir = try makeDir()
+        let pdf = try makePDF(pages: 2, in: dir, options: [.userPasswordOption: "secret", .ownerPasswordOption: "owner"])
+        let output = dir.appendingPathComponent("out.\(format.ext)")
+        await #expect(throws: ConversionError.self) {
+            try await PDFConverter().convert(pdf, to: format, output: output)
+        }
+        #expect(try files(in: dir) == ["doc.pdf"])
+    }
+
+    @Test func emptyPDFThrows() async throws {
+        let dir = try makeDir()
+        let pdf = dir.appendingPathComponent("empty.pdf")
+        // PDFKit refuses to write a document without pages, so this is a hand-written PDF with an empty page tree
+        // (PDFKit may refuse to open it at all, which is a failure as well).
+        var body = "%PDF-1.4\n"
+        var offsets: [Int] = []
+        for object in ["<</Type/Catalog/Pages 2 0 R>>", "<</Type/Pages/Kids[]/Count 0>>"] {
+            offsets.append(body.utf8.count)
+            body += "\(offsets.count) 0 obj\(object)endobj\n"
+        }
+        let xref = body.utf8.count
+        body += "xref\n0 3\n0000000000 65535 f \n"
+        body += offsets.map { String(format: "%010d 00000 n \n", $0) }.joined()
+        body += "trailer<</Size 3/Root 1 0 R>>\nstartxref\n\(xref)\n%%EOF\n"
+        try Data(body.utf8).write(to: pdf)
+        let output = dir.appendingPathComponent("out.png")
+        await #expect(throws: ConversionError.self) {
+            try await PDFConverter().convert(pdf, to: .png, output: output)
+        }
+        #expect(try files(in: dir) == ["empty.pdf"])
+    }
+
+    @Test func multiPageNeverOverwritesExistingFile() async throws {
+        let dir = try makeDir()
+        let pdf = try makePDF(pages: 2, in: dir)
+        let existing = dir.appendingPathComponent("doc\(L.pageSuffix(1)).png")
+        try Data("keep".utf8).write(to: existing)
+        try await PDFConverter().convert(pdf, to: .png, output: dir.appendingPathComponent("doc.png"))
+        #expect(try Data(contentsOf: existing) == Data("keep".utf8))
+        #expect(try files(in: dir).count == 4) // doc.pdf, kept page 1, "page 1 2", page 2
+    }
+
+    @Test func cancellationRemovesWrittenPages() async throws {
+        let dir = try makeDir()
+        let pdf = try makePDF(pages: 3, in: dir)
+        let output = dir.appendingPathComponent("doc.png")
+        // The quality closure runs once per page, so cancelling inside it stops the run after the first page was written.
+        let task = Task {
+            var calls = 0
+            let converter = PDFConverter(quality: {
+                calls += 1
+                if calls == 2 { withUnsafeCurrentTask { $0?.cancel() } }
+                return 0.9
+            })
+            try await converter.convert(pdf, to: .png, output: output)
+        }
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(try files(in: dir) == ["doc.pdf"])
+    }
 }

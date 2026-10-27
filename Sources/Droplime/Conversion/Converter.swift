@@ -201,15 +201,15 @@ final class ConversionService {
     /// (e.g. "photo.png" and "photo.tiff" both to JPG) never pick the same file.
     private static let reservedOutputs = OSAllocatedUnfairLock(initialState: Set<URL>())
 
-    private static func reserveOutputURL(for input: URL, ext: String) -> URL {
+    static func reserveOutputURL(for input: URL, ext: String, suffix: String = "") -> URL {
         reservedOutputs.withLock { reserved in
-            let url = outputURL(for: input, ext: ext, taken: reserved)
+            let url = outputURL(for: input, ext: ext, suffix: suffix, taken: reserved)
             reserved.insert(url)
             return url
         }
     }
 
-    private static func releaseOutputURL(_ url: URL) {
+    static func releaseOutputURL(_ url: URL) {
         _ = reservedOutputs.withLock { $0.remove(url) }
     }
 

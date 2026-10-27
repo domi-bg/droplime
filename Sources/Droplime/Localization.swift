@@ -68,7 +68,7 @@ struct Strings {
     // Errors
     let conversionFailed, actionFailed: String
     let toolFailed: (String) -> String
-    let cannotRead, cannotWrite, cannotOpen, cannotRotate, noText, onlyOnePage: (String) -> String
+    let cannotRead, cannotWrite, cannotOpen, cannotRotate, noText, onlyOnePage, pdfLocked: (String) -> String
     let notSupported: (String) -> String
     let cannotConvert: (String, String) -> String
     let exportFailed, pdfFailed, pageFailed, airDropUnavailable, terminalNotFound: String
@@ -126,6 +126,7 @@ struct Strings {
         cannotRotate: { "\($0) konnte nicht gedreht werden." },
         noText: { "\($0) enthält keinen Text (vielleicht ein Scan?)." },
         onlyOnePage: { "\($0) hat nur eine Seite." },
+        pdfLocked: { "\($0) ist passwortgeschützt." },
         notSupported: { "\($0) wird nicht unterstützt." },
         cannotConvert: { "\($0) kann nicht in \($1) umgewandelt werden." },
         exportFailed: "Export fehlgeschlagen.", pdfFailed: "PDF konnte nicht erstellt werden.",
@@ -187,6 +188,7 @@ struct Strings {
         cannotRotate: { "Couldn’t rotate \($0)." },
         noText: { "\($0) contains no text (maybe a scan?)." },
         onlyOnePage: { "\($0) has only one page." },
+        pdfLocked: { "\($0) is password-protected." },
         notSupported: { "\($0) isn’t supported." },
         cannotConvert: { "\($0) can’t be converted to \($1)." },
         exportFailed: "Export failed.", pdfFailed: "Couldn’t create the PDF.",
