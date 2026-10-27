@@ -53,7 +53,7 @@ struct Format: Hashable {
     }
 }
 
-protocol Converter {
+protocol Converter: Sendable {
     /// Formats a file of this type can be converted to.
     func targets(for type: UTType) -> [Format]
     func convert(_ input: URL, to format: Format, output: URL) async throws
@@ -89,7 +89,7 @@ extension UTType {
     }
 }
 
-final class ConversionService {
+final class ConversionService: Sendable {
     let converters: [Converter]
 
     init(converters: [Converter]) {

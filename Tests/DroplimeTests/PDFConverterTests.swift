@@ -1,4 +1,5 @@
 import AppKit
+import os
 import PDFKit
 import Testing
 @testable import Droplime
@@ -148,10 +149,9 @@ struct PDFConverterTests {
         let output = dir.appendingPathComponent("doc.png")
         // The quality closure runs once per page, so cancelling inside it stops the run after the first page was written.
         let task = Task {
-            var calls = 0
+            let calls = OSAllocatedUnfairLock(initialState: 0)
             let converter = PDFConverter(quality: {
-                calls += 1
-                if calls == 2 { withUnsafeCurrentTask { $0?.cancel() } }
+                if calls.withLock({ $0 += 1; return $0 }) == 2 { withUnsafeCurrentTask { $0?.cancel() } }
                 return 0.9
             })
             try await converter.convert(pdf, to: .png, output: output)

@@ -51,7 +51,7 @@ private final class FloatView: NSView, NSDraggingSource {
                                                    representationTypes: .thumbnail)
         QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { [weak self] rep, _ in
             guard let image = rep?.nsImage else { return }
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
                 self?.thumbnail = image
                 self?.needsDisplay = true
             }

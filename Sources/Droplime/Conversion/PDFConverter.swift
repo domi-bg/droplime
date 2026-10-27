@@ -5,9 +5,9 @@ import UniformTypeIdentifiers
 /// PDF → images (one file per page) or text.
 struct PDFConverter: Converter {
     /// JPEG quality, 0 to 1. A closure, so a changed setting applies to the next conversion.
-    let quality: () -> Double
+    let quality: @Sendable () -> Double
 
-    init(quality: @escaping () -> Double = { 0.9 }) {
+    init(quality: @escaping @Sendable () -> Double = { 0.9 }) {
         self.quality = quality
     }
 

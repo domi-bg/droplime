@@ -15,6 +15,7 @@ enum AfterConversion: String, CaseIterable, Identifiable {
 }
 
 /// Settings, stored in UserDefaults.
+@MainActor
 final class Settings: ObservableObject {
     static let shared = Settings()
 
@@ -48,10 +49,23 @@ final class Settings: ObservableObject {
         }
     }
 
-    static let qualityRange: ClosedRange<Double> = 0.5...1.0
+    nonisolated static let qualityRange: ClosedRange<Double> = 0.5...1.0
 
-    private static func clamp(_ quality: Double) -> Double {
+    private nonisolated static func clamp(_ quality: Double) -> Double {
         min(max(quality, qualityRange.lowerBound), qualityRange.upperBound)
+    }
+
+    /// `shared.language` and `shared.lossyQuality` for code off the main thread (`L`, conversions).
+    /// Read from UserDefaults, which is thread-safe and which `didSet` updates on every change.
+    nonisolated static var currentLanguage: AppLanguage { language(in: .standard) }
+    nonisolated static var currentLossyQuality: Double { lossyQuality(in: .standard) }
+
+    private nonisolated static func language(in defaults: UserDefaults) -> AppLanguage {
+        AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
+    }
+
+    private nonisolated static func lossyQuality(in defaults: UserDefaults) -> Double {
+        clamp(defaults.object(forKey: "lossyQuality") as? Double ?? 0.9)
     }
 
     private convenience init() { self.init(defaults: .standard) }
@@ -59,8 +73,8 @@ final class Settings: ObservableObject {
     init(defaults: UserDefaults) {
         self.defaults = defaults
         playSound = defaults.object(forKey: "playSound") as? Bool ?? true
-        lossyQuality = Self.clamp(defaults.object(forKey: "lossyQuality") as? Double ?? 0.9)
-        language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
+        lossyQuality = Self.lossyQuality(in: defaults)
+        language = Self.language(in: defaults)
         afterConversion = AfterConversion(rawValue: defaults.string(forKey: "afterConversion") ?? "") ?? .keep
         disabledFormats = Set(defaults.stringArray(forKey: "disabledFormats") ?? [])
     }

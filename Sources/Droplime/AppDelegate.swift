@@ -59,7 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Order = priority when several converters offer the same format.
         let optional: [Converter?] = [libreOffice, pandoc]
         service = ConversionService(converters:
-            [ImageConverter(quality: { Settings.shared.lossyQuality }), PDFConverter(quality: { Settings.shared.lossyQuality })] + optional.compactMap { $0 }
+            [ImageConverter(quality: { Settings.currentLossyQuality }), PDFConverter(quality: { Settings.currentLossyQuality })] + optional.compactMap { $0 }
             + [DocumentConverter(), MediaConverter()] + [ffmpeg].compactMap { $0 })
         tools = [("FFmpeg", ffmpeg != nil, "brew install ffmpeg"),
                  ("LibreOffice", libreOffice != nil, "brew install --cask libreoffice"),

@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Droplime
 
+@MainActor
 struct SettingsTests {
     private func makeDefaults() -> UserDefaults {
         UserDefaults(suiteName: "DroplimeTests-\(UUID())")!

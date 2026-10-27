@@ -61,10 +61,12 @@ extension AVAssetExportSession {
     /// Exports and throws on failure; task cancellation cancels the export and throws `CancellationError`.
     func exportHonoringCancellation() async throws {
         try Task.checkCancellation()
+        // AVAssetExportSession isn't Sendable, but cancelExport() is meant to be called while export() runs.
+        nonisolated(unsafe) let session = self
         await withTaskCancellationHandler {
-            await export()
+            await session.export()
         } onCancel: {
-            cancelExport()
+            session.cancelExport()
         }
         if status == .cancelled || Task.isCancelled { throw CancellationError() }
         if status != .completed {

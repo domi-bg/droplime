@@ -21,7 +21,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(L.settingsGeneral) {
-                Toggle(L.settingsLaunchAtLogin, isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
+                Toggle(L.settingsLaunchAtLogin, isOn: Binding(get: { launchAtLogin }, set: { setLaunchAtLogin($0) }))
                 if let loginError {
                     Text(L.loginError(loginError)).font(.caption).foregroundStyle(.red)
                 }

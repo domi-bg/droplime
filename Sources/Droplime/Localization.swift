@@ -27,7 +27,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
 /// Every visible string in the app. A new string has to be added for every language,
 /// otherwise the app doesn't build, so no translation can be forgotten.
-struct Strings {
+struct Strings: Sendable {
     // Wheel
     let modeConvert, modeTools, modeActions, nothingPossible: String
     let wheelKeep, wheelReplace: String
@@ -35,44 +35,44 @@ struct Strings {
 
     // Menu and settings
     let menuSettings, menuQuit, settingsWindowTitle: String
-    let menuConverting: (Int) -> String
+    let menuConverting: @Sendable (Int) -> String
     let menuCancel: String
     let settingsLanguage: String
-    let languageSystem: (String) -> String
+    let languageSystem: @Sendable (String) -> String
     let settingsAfterConversion, afterKeep, afterReplace, afterSplit: String
     let settingsFormats, settingsFormatsFooter: String
     let groupImages, groupDocuments, groupSheets, groupVideo, groupAudio: String
     let settingsTools, toolFound, restartAfterInstall, notAvailableHere: String
-    let needsTool: (String) -> String
+    let needsTool: @Sendable (String) -> String
     let settingsGeneral, settingsLaunchAtLogin, settingsPlaySound, settingsQuality, settingsQualityFooter: String
-    let loginError: (String) -> String
+    let loginError: @Sendable (String) -> String
 
     // Updates
     let menuCheckForUpdates, updateDownload, updateLater, updateCheckFailed, updateBadResponse: String
-    let updateAvailable, updateUpToDate: (String) -> String
-    let updateHTTPError: (Int) -> String
+    let updateAvailable, updateUpToDate: @Sendable (String) -> String
+    let updateHTTPError: @Sendable (Int) -> String
 
     // Tools and file names
     let toolResize, toolRotate, toolStripMetadata, toolMerge, toolSplit, toolCompress, toolRemoveAudio, toolZip, toolUnzip: String
     let suffixSmall, suffixRotated, suffixNoMetadata, suffixCompressed, suffixNoAudio: String
-    let pageSuffix: (Int) -> String
+    let pageSuffix: @Sendable (Int) -> String
     let mergedFileName, archiveFileName: String
 
     // Actions
     let actionAirDrop, actionCopy, actionMove, actionPath, actionTerminal, actionFloat: String
     let copyTo, moveTo, choose: String
-    let floatItems: (Int) -> String
-    let floatMore: (Int) -> String
+    let floatItems: @Sendable (Int) -> String
+    let floatMore: @Sendable (Int) -> String
     let floatTooltip: String
 
     // Errors
     let conversionFailed, actionFailed: String
-    let toolFailed: (String) -> String
-    let cannotRead, cannotWrite, cannotOpen, cannotRotate, noText, onlyOnePage, pdfLocked: (String) -> String
-    let notSupported: (String) -> String
-    let cannotConvert: (String, String) -> String
+    let toolFailed: @Sendable (String) -> String
+    let cannotRead, cannotWrite, cannotOpen, cannotRotate, noText, onlyOnePage, pdfLocked: @Sendable (String) -> String
+    let notSupported: @Sendable (String) -> String
+    let cannotConvert: @Sendable (String, String) -> String
     let exportFailed, pdfFailed, pageFailed, airDropUnavailable, terminalNotFound: String
-    let externalToolFailed: (String, String) -> String
+    let externalToolFailed: @Sendable (String, String) -> String
 
     static let german = Strings(
         modeConvert: "Konvertieren", modeTools: "Werkzeuge", modeActions: "Aktionen", nothingPossible: "Nichts möglich",
@@ -200,4 +200,4 @@ struct Strings {
 }
 
 /// The strings in the currently selected language.
-var L: Strings { Settings.shared.language.resolved == .german ? .german : .english }
+var L: Strings { Settings.currentLanguage.resolved == .german ? .german : .english }

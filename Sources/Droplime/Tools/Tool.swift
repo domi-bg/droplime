@@ -2,7 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 /// A tool in the Cmd wheel. Tools always create new files and leave the originals untouched.
-protocol Tool {
+protocol Tool: Sendable {
     var label: String { get }
     /// Whether the tool fits exactly this selection (types in file order).
     func applies(to types: [UTType]) -> Bool
